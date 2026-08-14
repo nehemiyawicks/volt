@@ -34,18 +34,28 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `Tray` | missing | v0.2 |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |
-| `contextBridge` | missing | needs preload runtime; v0.2 |
+| `contextBridge.exposeInMainWorld` | works | via `webPreferences.preload`; runs in main world (no isolated world yet) |
+| `contextBridge.exposeInIsolatedWorld` | partial | falls through to `exposeInMainWorld` (no isolated world in v0.1) |
+| `webPreferences.preload` | works | file is read and injected as an initialization script after the volt shim |
+| `require('electron')` in preload | works | returns `ipcRenderer`, `contextBridge`, `webFrame`; other members throw |
 
 ## Renderer process
 
-Volt does not run Node in the renderer. Renderers get `window.volt.invoke(channel, ...args)` for IPC. Existing renderer code that imports `ipcRenderer` from `electron` will not work until v0.2 lands preload-script support with a `contextBridge` shim.
+Volt does not run Node in the renderer, but it does run your `webPreferences.preload` file with a shim `require('electron')` that exposes `ipcRenderer` and `contextBridge`. This means the standard Electron pattern works unmodified:
 
-Migration path for a renderer today:
-
-```diff
-- const { ipcRenderer } = require('electron');
-- const result = await ipcRenderer.invoke('ping');
-+ const result = await window.volt.invoke('ping');
+```js
+// preload.js — unchanged from Electron
+const { contextBridge, ipcRenderer } = require('electron');
+contextBridge.exposeInMainWorld('api', {
+  ping: () => ipcRenderer.invoke('ping'),
+});
 ```
+
+What breaks:
+- `require('fs')`, `require('path')`, `require('node:*')` in preload: no Node runtime in the renderer. Do Node work in the main process and expose it through `ipcRenderer.invoke`.
+- `process`, `Buffer`, `global` in preload: same reason.
+- Isolated worlds (`contextIsolation: true`): the shim runs in the main world in v0.1. Secrets held in preload closures are still isolated by JS scope, but `window`-level values are shared. Fix scheduled for v0.2.
+
+Renderers that avoid preload entirely can still call `window.volt.invoke(channel, ...args)` directly.
 
 If your app depends on something not on this list, open an issue with the exact API and a snippet of how you use it.

@@ -60,6 +60,20 @@ pub struct WindowOptions {
     pub resizable: Option<bool>,
     pub url: Option<String>,
     pub html: Option<String>,
+    #[serde(default)]
+    pub web_preferences: Option<WebPreferences>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct WebPreferences {
+    #[serde(default)]
+    pub preload: Option<String>,
+    #[serde(default)]
+    pub context_isolation: Option<bool>,
+    #[serde(default)]
+    pub node_integration: Option<bool>,
 }
 
 #[allow(dead_code)]

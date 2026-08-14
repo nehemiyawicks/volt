@@ -204,7 +204,7 @@ fn handle_command(
             let tao_id = window.id();
 
             let ipc_proxy = proxy.clone();
-            let wv = WebViewBuilder::new(&window)
+            let mut wv = WebViewBuilder::new(&window)
                 .with_initialization_script(preload::PRELOAD_JS)
                 .with_ipc_handler(move |req| {
                     let body = req.body().to_string();
@@ -213,6 +213,15 @@ fn handle_command(
                         raw: body,
                     });
                 });
+            if let Some(wp) = options.web_preferences.as_ref() {
+                if let Some(path) = wp.preload.as_deref() {
+                    match std::fs::read_to_string(path) {
+                        Ok(user) => wv = wv.with_initialization_script(&user),
+                        Err(err) => eprintln!("[volt-core] preload {path} unreadable: {err}"),
+                    }
+                }
+            }
+            let wv = wv;
             let wv = match (options.url.as_deref(), options.html.as_deref()) {
                 (Some(u), _) => wv.with_url(u),
                 (_, Some(h)) => wv.with_html(h),

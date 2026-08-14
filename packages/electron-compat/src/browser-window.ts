@@ -1,16 +1,18 @@
 import { EventEmitter } from "node:events";
 import { host } from "./host.js";
 
+export interface WebPreferences {
+  preload?: string;
+  contextIsolation?: boolean;
+  nodeIntegration?: boolean;
+}
+
 export interface BrowserWindowOptions {
   title?: string;
   width?: number;
   height?: number;
   resizable?: boolean;
-  webPreferences?: {
-    preload?: string;
-    contextIsolation?: boolean;
-    nodeIntegration?: boolean;
-  };
+  webPreferences?: WebPreferences;
 }
 
 export class BrowserWindow extends EventEmitter {

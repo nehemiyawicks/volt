@@ -46,5 +46,40 @@ pub const PRELOAD_JS: &str = r#"
       try { cb({}, ...args); } catch (e) { console.error(e); }
     }
   };
+
+  const electronShim = {
+    ipcRenderer: {
+      invoke: (ch, ...args) => window.volt.invoke(ch, ...args),
+      send: (ch, ...args) => window.volt.send(ch, ...args),
+      on: (ch, cb) => { window.volt.on(ch, cb); return electronShim.ipcRenderer; },
+      once: (ch, cb) => {
+        const off = window.volt.on(ch, (e, ...a) => { off(); cb(e, ...a); });
+        return electronShim.ipcRenderer;
+      },
+      removeListener: (ch, cb) => { window.volt.off(ch, cb); return electronShim.ipcRenderer; },
+      removeAllListeners: () => electronShim.ipcRenderer,
+      sendSync: () => { throw new Error("ipcRenderer.sendSync is not supported in Volt"); },
+      postMessage: () => { throw new Error("ipcRenderer.postMessage is not supported in Volt"); },
+    },
+    contextBridge: {
+      exposeInMainWorld(name, api) {
+        Object.defineProperty(window, name, { value: api, writable: false, configurable: false });
+      },
+      exposeInIsolatedWorld(_worldId, name, api) {
+        Object.defineProperty(window, name, { value: api, writable: false, configurable: false });
+      },
+    },
+    webFrame: {
+      setZoomFactor: () => {},
+      getZoomFactor: () => 1,
+    },
+  };
+
+  const req = (name) => {
+    if (name === 'electron') return electronShim;
+    throw new Error("require('" + name + "') is not supported in Volt preloads");
+  };
+  window.require = req;
+  try { globalThis.require = req; } catch {}
 })();
 "#;
