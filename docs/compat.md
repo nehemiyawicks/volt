@@ -15,10 +15,15 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `app.getName()` | works | reads `VOLT_APP_NAME` env or falls back |
 | `app.getVersion()` | works | reads `VOLT_APP_VERSION` env or falls back |
 | `app.getPath()` | partial | `home`, `temp`, `downloads`, `userData` only |
-| `BrowserWindow` constructor | partial | `title`, `width`, `height`, `resizable` |
+| `BrowserWindow` constructor | works | `title`, `width`, `height`, `x`, `y`, `resizable`, `minimizable`, `maximizable`, `alwaysOnTop`, `frame`, `transparent`, `show`, `webPreferences` |
 | `BrowserWindow.loadURL()` | works | |
 | `BrowserWindow.loadFile()` | works | resolves to `file://` URL |
 | `BrowserWindow.close()` | works | |
+| `BrowserWindow.show/hide/focus` | works | |
+| `BrowserWindow.minimize/maximize/unmaximize/restore` | works | |
+| `BrowserWindow.setTitle` | works | |
+| `BrowserWindow.setBounds/getBounds` | works | logical coordinates |
+| `BrowserWindow.setAlwaysOnTop` | works | |
 | `webContents.openDevTools()` | stub | v0.2 |
 | `webContents.send()` | works | fires `window.volt.on(channel, cb)` in the renderer |
 | `ipcMain.handle()` | works | invocations from renderer via `window.volt.invoke` |

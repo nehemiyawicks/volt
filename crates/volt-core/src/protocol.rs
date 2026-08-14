@@ -11,6 +11,26 @@ pub enum Command {
     LoadUrl { window_id: u64, url: String, reply_id: String },
     #[serde(rename = "window.close")]
     CloseWindow { window_id: u64, reply_id: String },
+    #[serde(rename = "window.show")]
+    ShowWindow { window_id: u64, reply_id: String },
+    #[serde(rename = "window.hide")]
+    HideWindow { window_id: u64, reply_id: String },
+    #[serde(rename = "window.focus")]
+    FocusWindow { window_id: u64, reply_id: String },
+    #[serde(rename = "window.minimize")]
+    MinimizeWindow { window_id: u64, reply_id: String },
+    #[serde(rename = "window.maximize")]
+    MaximizeWindow { window_id: u64, reply_id: String },
+    #[serde(rename = "window.unmaximize")]
+    UnmaximizeWindow { window_id: u64, reply_id: String },
+    #[serde(rename = "window.setTitle")]
+    SetTitle { window_id: u64, title: String, reply_id: String },
+    #[serde(rename = "window.setBounds")]
+    SetBounds { window_id: u64, bounds: Bounds, reply_id: String },
+    #[serde(rename = "window.getBounds")]
+    GetBounds { window_id: u64, reply_id: String },
+    #[serde(rename = "window.setAlwaysOnTop")]
+    SetAlwaysOnTop { window_id: u64, flag: bool, reply_id: String },
     #[serde(rename = "app.quit")]
     Quit,
     #[serde(rename = "dialog.showMessageBox")]
@@ -57,11 +77,27 @@ pub struct WindowOptions {
     pub title: Option<String>,
     pub width: Option<f64>,
     pub height: Option<f64>,
+    pub x: Option<f64>,
+    pub y: Option<f64>,
     pub resizable: Option<bool>,
+    pub minimizable: Option<bool>,
+    pub maximizable: Option<bool>,
+    pub always_on_top: Option<bool>,
+    pub frame: Option<bool>,
+    pub transparent: Option<bool>,
+    pub show: Option<bool>,
     pub url: Option<String>,
     pub html: Option<String>,
     #[serde(default)]
     pub web_preferences: Option<WebPreferences>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Bounds {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
 }
 
 #[allow(dead_code)]

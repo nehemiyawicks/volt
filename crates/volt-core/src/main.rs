@@ -197,8 +197,29 @@ fn handle_command(
                     options.width.unwrap_or(800.0),
                     options.height.unwrap_or(600.0),
                 ));
+            if let (Some(x), Some(y)) = (options.x, options.y) {
+                builder = builder.with_position(tao::dpi::LogicalPosition::new(x, y));
+            }
             if let Some(false) = options.resizable {
                 builder = builder.with_resizable(false);
+            }
+            if let Some(v) = options.minimizable {
+                builder = builder.with_minimizable(v);
+            }
+            if let Some(v) = options.maximizable {
+                builder = builder.with_maximizable(v);
+            }
+            if let Some(v) = options.always_on_top {
+                builder = builder.with_always_on_top(v);
+            }
+            if let Some(false) = options.frame {
+                builder = builder.with_decorations(false);
+            }
+            if let Some(true) = options.transparent {
+                builder = builder.with_transparent(true);
+            }
+            if let Some(false) = options.show {
+                builder = builder.with_visible(false);
             }
             let window = builder.build(target)?;
             let tao_id = window.id();
@@ -245,10 +266,69 @@ fn handle_command(
         }
         JsCommand::CloseWindow { window_id, reply_id } => {
             state.windows.remove(&window_id);
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::ShowWindow { window_id, reply_id } => {
+            with_window(state, window_id, |w| w.set_visible(true))?;
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::HideWindow { window_id, reply_id } => {
+            with_window(state, window_id, |w| w.set_visible(false))?;
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::FocusWindow { window_id, reply_id } => {
+            with_window(state, window_id, |w| w.set_focus())?;
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::MinimizeWindow { window_id, reply_id } => {
+            with_window(state, window_id, |w| w.set_minimized(true))?;
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::MaximizeWindow { window_id, reply_id } => {
+            with_window(state, window_id, |w| w.set_maximized(true))?;
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::UnmaximizeWindow { window_id, reply_id } => {
+            with_window(state, window_id, |w| w.set_maximized(false))?;
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::SetTitle { window_id, title, reply_id } => {
+            with_window(state, window_id, |w| w.set_title(&title))?;
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::SetBounds { window_id, bounds, reply_id } => {
+            let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
+            if let (Some(x), Some(y)) = (bounds.x, bounds.y) {
+                slot.window.set_outer_position(tao::dpi::LogicalPosition::new(x, y));
+            }
+            if let (Some(w), Some(h)) = (bounds.width, bounds.height) {
+                slot.window.set_inner_size(tao::dpi::LogicalSize::new(w, h));
+            }
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::GetBounds { window_id, reply_id } => {
+            let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
+            let pos = slot.window.outer_position().ok();
+            let size = slot.window.inner_size();
+            let scale = slot.window.scale_factor();
+            let logical_size = size.to_logical::<f64>(scale);
+            let (x, y) = match pos {
+                Some(p) => {
+                    let lp = p.to_logical::<f64>(scale);
+                    (lp.x, lp.y)
+                }
+                None => (0.0, 0.0),
+            };
             state.tx_to_js.send(JsEvent::Reply {
                 reply_id,
-                value: serde_json::Value::Null,
+                value: serde_json::json!({
+                    "x": x, "y": y, "width": logical_size.width, "height": logical_size.height
+                }),
             })?;
+        }
+        JsCommand::SetAlwaysOnTop { window_id, flag, reply_id } => {
+            with_window(state, window_id, |w| w.set_always_on_top(flag))?;
+            ack(&state.tx_to_js, reply_id)?;
         }
         JsCommand::Quit => state.windows.clear(),
         JsCommand::ShowMessageBox { options, reply_id } => {
@@ -315,6 +395,17 @@ fn handle_command(
             })?;
         }
     }
+    Ok(())
+}
+
+fn with_window<F: FnOnce(&Window)>(state: &AppState, id: u64, f: F) -> Result<()> {
+    let slot = state.windows.get(&id).ok_or_else(|| anyhow!("no window {id}"))?;
+    f(&slot.window);
+    Ok(())
+}
+
+fn ack(tx: &Sender<JsEvent>, reply_id: String) -> Result<()> {
+    tx.send(JsEvent::Reply { reply_id, value: serde_json::Value::Null })?;
     Ok(())
 }
 

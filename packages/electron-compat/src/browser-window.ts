@@ -7,11 +7,26 @@ export interface WebPreferences {
   nodeIntegration?: boolean;
 }
 
+export interface Rectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface BrowserWindowOptions {
   title?: string;
   width?: number;
   height?: number;
+  x?: number;
+  y?: number;
   resizable?: boolean;
+  minimizable?: boolean;
+  maximizable?: boolean;
+  alwaysOnTop?: boolean;
+  frame?: boolean;
+  transparent?: boolean;
+  show?: boolean;
   webPreferences?: WebPreferences;
 }
 
@@ -42,13 +57,55 @@ export class BrowserWindow extends EventEmitter {
 
   async loadFile(filePath: string): Promise<void> {
     const path = await import("node:path");
-    const abs = path.resolve(filePath);
-    await this.loadURL("file://" + abs);
+    await this.loadURL("file://" + path.resolve(filePath));
   }
 
   async close(): Promise<void> {
-    const id = await this.idPromise;
-    await host().request("window.close", { window_id: id });
+    await host().request("window.close", { window_id: await this.idPromise });
+  }
+
+  async show(): Promise<void> {
+    await host().request("window.show", { window_id: await this.idPromise });
+  }
+
+  async hide(): Promise<void> {
+    await host().request("window.hide", { window_id: await this.idPromise });
+  }
+
+  async focus(): Promise<void> {
+    await host().request("window.focus", { window_id: await this.idPromise });
+  }
+
+  async minimize(): Promise<void> {
+    await host().request("window.minimize", { window_id: await this.idPromise });
+  }
+
+  async maximize(): Promise<void> {
+    await host().request("window.maximize", { window_id: await this.idPromise });
+  }
+
+  async unmaximize(): Promise<void> {
+    await host().request("window.unmaximize", { window_id: await this.idPromise });
+  }
+
+  async restore(): Promise<void> {
+    await host().request("window.unmaximize", { window_id: await this.idPromise });
+  }
+
+  async setTitle(title: string): Promise<void> {
+    await host().request("window.setTitle", { window_id: await this.idPromise, title });
+  }
+
+  async setBounds(bounds: Partial<Rectangle>): Promise<void> {
+    await host().request("window.setBounds", { window_id: await this.idPromise, bounds });
+  }
+
+  async getBounds(): Promise<Rectangle> {
+    return (await host().request("window.getBounds", { window_id: await this.idPromise })) as Rectangle;
+  }
+
+  async setAlwaysOnTop(flag: boolean): Promise<void> {
+    await host().request("window.setAlwaysOnTop", { window_id: await this.idPromise, flag });
   }
 
   _windowIdPromise(): Promise<number> {
@@ -71,10 +128,7 @@ export class WebContents extends EventEmitter {
 
   send(channel: string, ...args: unknown[]): void {
     const post = (id: number) => host().send("webContents.send", { window_id: id, channel, args });
-    if (this.windowId !== null) {
-      post(this.windowId);
-      return;
-    }
-    void this.win._windowIdPromise().then(post);
+    if (this.windowId !== null) post(this.windowId);
+    else void this.win._windowIdPromise().then(post);
   }
 }
