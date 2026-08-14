@@ -19,3 +19,5 @@ anyhow = "1"
 rfd = { version = "0.14", default-features = false, features = ["xdg-portal", "tokio"] }
 notify-rust = "4"
 muda = "0.15"
+arboard = { version = "3", default-features = false }
+global-hotkey = "0.6"

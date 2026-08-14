@@ -24,6 +24,8 @@ struct AppState {
     next_window_id: u64,
     tx_to_js: Sender<JsEvent>,
     app_menu: Option<muda::Menu>,
+    hotkeys: HashMap<String, global_hotkey::hotkey::HotKey>,
+    hotkey_manager: Option<global_hotkey::GlobalHotKeyManager>,
 }
 
 struct WindowSlot {
@@ -38,6 +40,7 @@ enum HostEvent {
     Command(JsCommand),
     IpcFromRenderer { window_id: u64, raw: String },
     MenuClick(String),
+    HotkeyPressed(u32),
     ChildExited,
 }
 
@@ -60,11 +63,14 @@ fn main() -> Result<()> {
     let child = spawn_js_runtime(&manifest, proxy.clone())?;
     thread::spawn(move || pump_events_to_js(child.stdin, rx_to_js));
 
+    let hotkey_manager = global_hotkey::GlobalHotKeyManager::new().ok();
     let mut state = AppState {
         windows: HashMap::new(),
         next_window_id: 1,
         tx_to_js,
         app_menu: None,
+        hotkeys: HashMap::new(),
+        hotkey_manager,
     };
     let _ = state.tx_to_js.send(JsEvent::Ready);
 
@@ -73,6 +79,13 @@ fn main() -> Result<()> {
         let id = ev.id().0.clone();
         if !id.is_empty() {
             let _ = menu_proxy.send_event(HostEvent::MenuClick(id));
+        }
+    }));
+
+    let hotkey_proxy = proxy.clone();
+    global_hotkey::GlobalHotKeyEvent::set_event_handler(Some(move |ev: global_hotkey::GlobalHotKeyEvent| {
+        if ev.state == global_hotkey::HotKeyState::Pressed {
+            let _ = hotkey_proxy.send_event(HostEvent::HotkeyPressed(ev.id));
         }
     }));
 
@@ -91,6 +104,11 @@ fn main() -> Result<()> {
             }
             Event::UserEvent(HostEvent::MenuClick(id)) => {
                 let _ = state.tx_to_js.send(JsEvent::MenuClick { id });
+            }
+            Event::UserEvent(HostEvent::HotkeyPressed(id)) => {
+                if let Some((sid, _)) = state.hotkeys.iter().find(|(_, k)| k.id() == id) {
+                    let _ = state.tx_to_js.send(JsEvent::GlobalShortcutClick { id: sid.clone() });
+                }
             }
             Event::UserEvent(HostEvent::ChildExited) => *control_flow = ControlFlow::Exit,
             Event::WindowEvent { event, window_id, .. } => {
@@ -461,6 +479,40 @@ fn handle_command(
                     });
                 })?;
         }
+        JsCommand::ClipboardReadText { reply_id } => {
+            let text = arboard::Clipboard::new()
+                .and_then(|mut c| c.get_text())
+                .unwrap_or_default();
+            state.tx_to_js.send(JsEvent::Reply { reply_id, value: serde_json::Value::String(text) })?;
+        }
+        JsCommand::ClipboardWriteText { text, reply_id } => {
+            let _ = arboard::Clipboard::new().and_then(|mut c| c.set_text(text));
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::GlobalShortcutRegister { id, accelerator, reply_id } => {
+            let result = register_hotkey(state, &id, &accelerator);
+            state.tx_to_js.send(JsEvent::Reply {
+                reply_id,
+                value: serde_json::json!({ "ok": result.is_ok(), "error": result.err().map(|e| e.to_string()) }),
+            })?;
+        }
+        JsCommand::GlobalShortcutUnregister { id, reply_id } => {
+            if let (Some(mgr), Some(k)) = (state.hotkey_manager.as_ref(), state.hotkeys.remove(&id)) {
+                let _ = mgr.unregister(k);
+            }
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::GlobalShortcutUnregisterAll { reply_id } => {
+            if let Some(mgr) = state.hotkey_manager.as_ref() {
+                for (_, k) in state.hotkeys.drain() {
+                    let _ = mgr.unregister(k);
+                }
+            }
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::AppBeforeQuit { reply_id } => {
+            ack(&state.tx_to_js, reply_id)?;
+        }
         JsCommand::NotificationShow { options, reply_id } => {
             std::thread::spawn(move || show_notification(options));
             ack(&state.tx_to_js, reply_id)?;
@@ -618,6 +670,16 @@ fn save_dialog(opts: protocol::SaveDialogOptions) -> serde_json::Value {
         Some(p) => serde_json::json!({ "canceled": false, "filePath": p.to_string_lossy() }),
         None => serde_json::json!({ "canceled": true }),
     }
+}
+
+fn register_hotkey(state: &mut AppState, id: &str, accelerator: &str) -> Result<()> {
+    use std::str::FromStr;
+    let mgr = state.hotkey_manager.as_ref().ok_or_else(|| anyhow!("hotkey manager unavailable"))?;
+    let hk = global_hotkey::hotkey::HotKey::from_str(accelerator)
+        .map_err(|e| anyhow!("invalid accelerator: {e}"))?;
+    mgr.register(hk.clone()).map_err(|e| anyhow!("register failed: {e}"))?;
+    state.hotkeys.insert(id.to_string(), hk);
+    Ok(())
 }
 
 fn show_notification(options: protocol::NotificationOptions) {

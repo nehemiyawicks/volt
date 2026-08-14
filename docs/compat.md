@@ -52,6 +52,9 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `Menu.setApplicationMenu` | works | macOS app menu; per-window on Windows/Linux |
 | `MenuItem` | partial | id, label, role, accelerator, enabled, submenu, click; no checkbox/radio state yet |
 | `MenuItem` accelerator collision detection | works | `Menu.buildFromTemplate` throws a JS error if a custom accelerator clashes with a role's system shortcut (prevents the macOS NSException crash) |
+| `clipboard.readText` / `writeText` | works | via `arboard` |
+| `globalShortcut.register` / `unregister` / `unregisterAll` / `isRegistered` | works | via `global-hotkey`; same accelerator syntax as Electron |
+| `app.on('before-quit')` / `on('will-quit')` | partial | fires on `app.quit()` and `app.exit()`; not cancelable via `event.preventDefault()` yet |
 | `Tray` | missing | v0.2 |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |

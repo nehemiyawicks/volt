@@ -60,6 +60,18 @@ pub enum Command {
     NotificationShow { options: NotificationOptions, reply_id: String },
     #[serde(rename = "menu.setApplicationMenu")]
     SetApplicationMenu { template: Vec<MenuItemSpec>, reply_id: String },
+    #[serde(rename = "clipboard.readText")]
+    ClipboardReadText { reply_id: String },
+    #[serde(rename = "clipboard.writeText")]
+    ClipboardWriteText { text: String, reply_id: String },
+    #[serde(rename = "globalShortcut.register")]
+    GlobalShortcutRegister { id: String, accelerator: String, reply_id: String },
+    #[serde(rename = "globalShortcut.unregister")]
+    GlobalShortcutUnregister { id: String, reply_id: String },
+    #[serde(rename = "globalShortcut.unregisterAll")]
+    GlobalShortcutUnregisterAll { reply_id: String },
+    #[serde(rename = "app.beforeQuit")]
+    AppBeforeQuit { reply_id: String },
     #[serde(rename = "webContents.executeJavaScript")]
     ExecuteJavaScript { window_id: u64, code: String, reply_id: String },
     #[serde(rename = "webContents.openDevTools")]
@@ -217,4 +229,6 @@ pub enum Event {
     },
     #[serde(rename = "menu.click")]
     MenuClick { id: String },
+    #[serde(rename = "globalShortcut.click")]
+    GlobalShortcutClick { id: String },
 }

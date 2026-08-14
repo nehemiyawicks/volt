@@ -21,3 +21,5 @@ anyhow = { workspace = true }
 rfd = { workspace = true }
 notify-rust = { workspace = true }
 muda = { workspace = true }
+arboard = { workspace = true }
+global-hotkey = { workspace = true }

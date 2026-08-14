@@ -22,11 +22,15 @@ class App extends EventEmitter {
   }
 
   quit(): void {
+    this.emit("before-quit");
+    this.emit("will-quit");
     host().send("app.quit");
     process.exit(0);
   }
 
   exit(code = 0): void {
+    this.emit("before-quit");
+    this.emit("will-quit");
     host().send("app.quit");
     process.exit(code);
   }

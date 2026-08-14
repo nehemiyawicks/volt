@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, Notification, shell } from "electron";
+import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, Notification, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -17,6 +17,11 @@ ipcMain.handle("notify", async () => {
   await new Notification({ title: "Volt", body: "Hello from the main process." }).show();
   return true;
 });
+ipcMain.handle("copyToClipboard", async (_e, text: string) => {
+  await clipboard.writeText(text);
+  return true;
+});
+ipcMain.handle("readClipboard", async () => clipboard.readText());
 
 app.whenReady().then(async () => {
   const win = new BrowserWindow({
@@ -95,6 +100,9 @@ app.whenReady().then(async () => {
         <p><button id="pick">Pick a file</button> <code id="picked"></code></p>
         <p><button id="gh">Open GitHub</button></p>
         <p><button id="notify">Fire notification</button></p>
+        <p><button id="copy">Copy 'hello volt' to clipboard</button></p>
+        <p><button id="read">Read clipboard</button> <code id="clip"></code></p>
+        <p>Global shortcut: press <b>Cmd+Shift+V</b> anywhere (even in another app)</p>
         <p>From main: <code id="tick"></code></p>
         <script>
           document.getElementById('ping').onclick = async () => {
@@ -106,6 +114,10 @@ app.whenReady().then(async () => {
           };
           document.getElementById('gh').onclick = () => window.electronAPI.openGithub();
           document.getElementById('notify').onclick = () => window.electronAPI.notify();
+          document.getElementById('copy').onclick = () => window.electronAPI.copyToClipboard('hello volt');
+          document.getElementById('read').onclick = async () => {
+            document.getElementById('clip').textContent = await window.electronAPI.readClipboard();
+          };
           window.electronAPI.onTick((n) => {
             document.getElementById('tick').textContent = 'tick ' + n;
           });
@@ -128,3 +140,9 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => app.quit());
+
+app.whenReady().then(async () => {
+  await globalShortcut.register("CmdOrCtrl+Shift+V", () => {
+    new Notification({ title: "Volt", body: "Global shortcut fired." }).show();
+  });
+});

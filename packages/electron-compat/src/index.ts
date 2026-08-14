@@ -18,3 +18,5 @@ export { Notification } from "./notification.js";
 export type { NotificationConstructorOptions } from "./notification.js";
 export { Menu, MenuItem } from "./menu.js";
 export type { MenuItemConstructorOptions, MenuItemRole, MenuItemType } from "./menu.js";
+export { clipboard } from "./clipboard.js";
+export { globalShortcut } from "./global-shortcut.js";
