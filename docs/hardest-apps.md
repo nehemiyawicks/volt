@@ -36,6 +36,20 @@ All three fixes are in the compat layer, none app-specific.
 
 Fix is in the compat layer, not app-specific.
 
+## Rung 1 bundled with `volt build`
+
+`electron-quick-start` builds cleanly with `npx volt dev build` in the app dir:
+
+- Produces `dist/eqs.app` (~26 MB debug, will shrink with `cargo build --release`)
+- Bundle layout: `Contents/{Info.plist,MacOS/eqs,Resources/{main.js,preload.js,index.html,styles.css,renderer.js,volt.manifest.json,node_modules/*}}`
+- `open dist/eqs.app` launches it standalone; the bundled `volt-core` binary auto-detects it's inside `*.app/Contents/MacOS/` and loads `Resources/volt.manifest.json`
+- Distributable: zip the `.app`, hand it to someone else, they double-click and it runs (no volt install required on their machine)
+
+Uncovered during the bundle test:
+
+- `copyDir` used `statSync` which follows symlinks and threw on broken ones (npm creates a broken `node_modules/.bin/electron` symlink when the real `electron` postinstall is skipped). Switched to `lstatSync`; broken symlinks are now skipped, valid symlinks are dereferenced.
+- The sibling-copy logic only kicked in when the entry lived in a subdirectory. When `main.js` was at the project root, sibling files like `index.html` and `preload.js` were silently dropped. Replaced with a top-level walk that copies everything except `node_modules`, `dist`, `build`, `out`, `target`, `.git`, and dotfiles.
+
 ## How an entry gets added
 
 - Fork the app

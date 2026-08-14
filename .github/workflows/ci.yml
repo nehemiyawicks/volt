@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install Linux WebKit deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Build volt-core
+        run: cargo build -p volt-core --release
+      - name: Rustfmt
+        run: cargo fmt --all -- --check
+        continue-on-error: true
+
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - name: Build electron-compat
+        run: npm --workspace=@volt/electron-compat run build
+      - name: Verify dist artefacts
+        run: |
+          test -f packages/electron-compat/dist/index.js
+          test -f packages/electron-compat/dist/index.cjs
+          test -f packages/electron-compat/dist/index.d.ts
+
+  smoke:
+    runs-on: macos-latest
+    needs: [rust, node]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: cargo build -p volt-core --release
+      - run: npm install
+      - run: npm --workspace=@volt/electron-compat run build
+      - name: volt-core --help (no manifest = clean error)
+        run: |
+          set +e
+          VOLT_MANIFEST=/nonexistent ./target/release/volt-core 2>&1 | tee out.txt
+          grep -q "read manifest" out.txt

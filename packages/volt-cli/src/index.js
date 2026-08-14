@@ -120,12 +120,15 @@ async function build() {
 
   copyFileSync(manifestPath, join(resourcesDir, "volt.manifest.json"));
 
-  const entryAbs = resolve(cwd, manifest.entry);
-  const entryRel = relative(cwd, entryAbs);
-  copyIntoResources(cwd, resourcesDir, entryRel);
+  const skip = new Set(["node_modules", "dist", "build", "out", ".git", "volt.manifest.json", "target"]);
+  for (const name of readdirSync(cwd)) {
+    if (skip.has(name)) continue;
+    if (name.startsWith(".")) continue;
+    copyPath(join(cwd, name), join(resourcesDir, name));
+  }
 
   const nm = resolve(cwd, "node_modules");
-  if (existsSync(nm)) copyDir(nm, join(resourcesDir, "node_modules"));
+  if (existsSync(nm)) copyPath(nm, join(resourcesDir, "node_modules"));
 
   writeFileSync(
     join(contents, "Info.plist"),
@@ -136,28 +139,36 @@ async function build() {
   console.log(`  open ${appDir}     # to launch`);
 }
 
-function copyIntoResources(root, resources, relPath) {
-  const src = resolve(root, relPath);
-  const dst = join(resources, relPath);
-  const st = statSync(src);
+function copyPath(src, dst) {
+  let st;
+  try {
+    st = lstatSync(src);
+  } catch {
+    return;
+  }
+  if (st.isSymbolicLink()) {
+    try {
+      statSync(src);
+    } catch {
+      return;
+    }
+    try {
+      const real = require("node:fs").realpathSync(src);
+      mkdirSync(dirname(dst), { recursive: true });
+      copyPath(real, dst);
+    } catch {}
+    return;
+  }
   if (st.isDirectory()) {
-    copyDir(src, dst);
-  } else {
+    mkdirSync(dst, { recursive: true });
+    for (const name of readdirSync(src)) {
+      copyPath(join(src, name), join(dst, name));
+    }
+    return;
+  }
+  if (st.isFile()) {
     mkdirSync(dirname(dst), { recursive: true });
     copyFileSync(src, dst);
-  }
-  const srcDir = dirname(src);
-  if (srcDir !== root) {
-    for (const sibling of readdirSync(srcDir)) {
-      const sibSrc = join(srcDir, sibling);
-      if (sibSrc === src) continue;
-      if (statSync(sibSrc).isFile()) {
-        const rel = relative(root, sibSrc);
-        const sibDst = join(resources, rel);
-        mkdirSync(dirname(sibDst), { recursive: true });
-        copyFileSync(sibSrc, sibDst);
-      }
-    }
   }
 }
 
@@ -220,11 +231,5 @@ function findCore() {
 }
 
 function copyDir(src, dst) {
-  mkdirSync(dst, { recursive: true });
-  for (const name of readdirSync(src)) {
-    const s = join(src, name);
-    const d = join(dst, name);
-    if (statSync(s).isDirectory()) copyDir(s, d);
-    else copyFileSync(s, d);
-  }
+  copyPath(src, dst);
 }
