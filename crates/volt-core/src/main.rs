@@ -130,6 +130,9 @@ fn main() -> Result<()> {
             Event::UserEvent(HostEvent::TrayClicked(id)) => {
                 let _ = state.tx_to_js.send(JsEvent::TrayClick { id });
             }
+            Event::Reopen { has_visible_windows, .. } => {
+                let _ = state.tx_to_js.send(JsEvent::AppActivate { has_visible_windows });
+            }
             Event::UserEvent(HostEvent::ChildExited) => *control_flow = ControlFlow::Exit,
             Event::WindowEvent { event, window_id, .. } => {
                 let key = state

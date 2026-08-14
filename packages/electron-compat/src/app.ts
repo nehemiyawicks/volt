@@ -15,6 +15,9 @@ class App extends EventEmitter {
     const h = host();
     h.on("app.allWindowsClosed", () => this.emit("window-all-closed"));
     h.on("ready", () => this.emit("ready"));
+    h.on("app.activate", (has_visible_windows: boolean) => {
+      this.emit("activate", { hasVisibleWindows: has_visible_windows }, has_visible_windows);
+    });
   }
 
   whenReady(): Promise<void> {

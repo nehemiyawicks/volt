@@ -247,4 +247,6 @@ pub enum Event {
     GlobalShortcutClick { id: String },
     #[serde(rename = "tray.click")]
     TrayClick { id: String },
+    #[serde(rename = "app.activate")]
+    AppActivate { has_visible_windows: bool },
 }

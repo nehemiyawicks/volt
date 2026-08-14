@@ -10,7 +10,7 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 |---|---|---|
 | `app.whenReady()` | works | |
 | `app.on('window-all-closed')` | works | |
-| `app.on('activate')` | missing | v0.2 |
+| `app.on('activate')` | works | fires on macOS Dock click via tao Event::Reopen; receives `{ hasVisibleWindows }` |
 | `app.quit()` | works | |
 | `app.getName()` | works | reads `VOLT_APP_NAME` env or falls back |
 | `app.getVersion()` | works | reads `VOLT_APP_VERSION` env or falls back |

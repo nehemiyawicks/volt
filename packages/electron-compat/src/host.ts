@@ -59,6 +59,18 @@ class Host extends EventEmitter {
       case "ipc.invoke":
         this.emit("ipc.invoke", msg);
         return;
+      case "app.activate":
+        this.emit("app.activate", msg.has_visible_windows);
+        return;
+      case "menu.click":
+        this.emit("menu.click", msg);
+        return;
+      case "globalShortcut.click":
+        this.emit("globalShortcut.click", msg);
+        return;
+      case "tray.click":
+        this.emit("tray.click", msg);
+        return;
     }
   }
 
