@@ -60,6 +60,8 @@ pub enum Command {
     NotificationShow { options: NotificationOptions, reply_id: String },
     #[serde(rename = "menu.setApplicationMenu")]
     SetApplicationMenu { template: Vec<MenuItemSpec>, reply_id: String },
+    #[serde(rename = "webContents.executeJavaScript")]
+    ExecuteJavaScript { window_id: u64, code: String, reply_id: String },
 }
 
 #[derive(Debug, Deserialize)]

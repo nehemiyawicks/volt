@@ -34,6 +34,8 @@ export class BrowserWindow extends EventEmitter {
   readonly id: number = 0;
   readonly webContents: WebContents;
   private idPromise: Promise<number>;
+  private static registry = new Map<number, BrowserWindow>();
+  private static focusedId: number | null = null;
 
   constructor(options: BrowserWindowOptions = {}) {
     super();
@@ -43,18 +45,40 @@ export class BrowserWindow extends EventEmitter {
       .then((r) => {
         (this as any).id = r.id;
         (this.webContents as any)._setId(r.id);
+        BrowserWindow.registry.set(r.id, this);
         const h = host();
         h.on("window.closed", (closedId: number) => {
-          if (closedId === r.id) this.emit("closed");
+          if (closedId === r.id) {
+            BrowserWindow.registry.delete(r.id);
+            if (BrowserWindow.focusedId === r.id) BrowserWindow.focusedId = null;
+            this.emit("closed");
+          }
         });
         h.on("window.focus", (id: number) => {
-          if (id === r.id) this.emit("focus");
+          if (id === r.id) { BrowserWindow.focusedId = r.id; this.emit("focus"); }
         });
         h.on("window.blur", (id: number) => {
-          if (id === r.id) this.emit("blur");
+          if (id === r.id) {
+            if (BrowserWindow.focusedId === r.id) BrowserWindow.focusedId = null;
+            this.emit("blur");
+          }
         });
         return r.id;
       });
+  }
+
+  static getAllWindows(): BrowserWindow[] {
+    return [...BrowserWindow.registry.values()];
+  }
+
+  static fromId(id: number): BrowserWindow | null {
+    return BrowserWindow.registry.get(id) ?? null;
+  }
+
+  static getFocusedWindow(): BrowserWindow | null {
+    return BrowserWindow.focusedId !== null
+      ? BrowserWindow.registry.get(BrowserWindow.focusedId) ?? null
+      : null;
   }
 
   async loadURL(url: string): Promise<void> {
@@ -150,5 +174,18 @@ export class WebContents extends EventEmitter {
     const post = (id: number) => host().send("webContents.send", { window_id: id, channel, args });
     if (this.windowId !== null) post(this.windowId);
     else void this.win._windowIdPromise().then(post);
+  }
+
+  async executeJavaScript(code: string): Promise<unknown> {
+    const id = await this.win._windowIdPromise();
+    const r = await host().request<{ value: unknown }>("webContents.executeJavaScript", {
+      window_id: id,
+      code,
+    });
+    return r.value;
+  }
+
+  async reload(): Promise<void> {
+    await this.executeJavaScript("location.reload()");
   }
 }

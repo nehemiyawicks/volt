@@ -30,6 +30,11 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `BrowserWindow.setAlwaysOnTop` | works | |
 | `BrowserWindow.on('closed')` | works | |
 | `BrowserWindow.on('focus')` / `on('blur')` | works | fires on native focus change |
+| `BrowserWindow.getAllWindows()` | works | JS-side registry of live windows |
+| `BrowserWindow.fromId(id)` | works | |
+| `BrowserWindow.getFocusedWindow()` | works | tracked via focus/blur events |
+| `webContents.executeJavaScript(code)` | works | returns the evaluated value; complex objects serialised as JSON |
+| `webContents.reload()` | works | delegates to `location.reload()` |
 | `webContents.openDevTools()` | stub | v0.2 |
 | `webContents.send()` | works | fires `window.volt.on(channel, cb)` in the renderer |
 | `ipcMain.handle()` | works | invocations from renderer via `window.volt.invoke` |

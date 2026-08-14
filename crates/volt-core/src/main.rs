@@ -427,17 +427,30 @@ fn handle_command(
             state.app_menu = Some(m);
             ack(&state.tx_to_js, reply_id)?;
         }
+        JsCommand::ExecuteJavaScript { window_id, code, reply_id } => {
+            let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
+            let tx = state.tx_to_js.clone();
+            let reply = reply_id.clone();
+            slot.webview
+                .evaluate_script_with_callback(&code, move |result| {
+                    let parsed: serde_json::Value = serde_json::from_str(&result)
+                        .unwrap_or(serde_json::Value::String(result));
+                    let _ = tx.send(JsEvent::Reply {
+                        reply_id: reply.clone(),
+                        value: serde_json::json!({ "value": parsed }),
+                    });
+                })?;
+        }
         JsCommand::NotificationShow { options, reply_id } => {
-            let mut n = notify_rust::Notification::new();
-            n.summary(&options.title);
-            if let Some(b) = &options.body { n.body(b); }
-            #[cfg(target_os = "macos")]
-            if let Some(s) = &options.subtitle { n.subtitle(s); }
-            let _ = n.show();
-            state.tx_to_js.send(JsEvent::Reply {
-                reply_id,
-                value: serde_json::Value::Null,
-            })?;
+            std::thread::spawn(move || {
+                let mut n = notify_rust::Notification::new();
+                n.summary(&options.title);
+                if let Some(b) = &options.body { n.body(b); }
+                #[cfg(target_os = "macos")]
+                if let Some(s) = &options.subtitle { n.subtitle(s); }
+                let _ = n.show();
+            });
+            ack(&state.tx_to_js, reply_id)?;
         }
     }
     Ok(())
