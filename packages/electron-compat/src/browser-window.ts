@@ -63,9 +63,23 @@ export class BrowserWindow extends EventEmitter {
             this.emit("blur");
           }
         });
+        h.on("webContents.didStartLoading", (id: number) => {
+          if (id === r.id) this.webContents.emit("did-start-loading");
+        });
+        h.on("webContents.didFinishLoad", (id: number) => {
+          if (id === r.id) {
+            this.webContents.emit("did-finish-load");
+            if (!this.readyShown) {
+              this.readyShown = true;
+              this.emit("ready-to-show");
+            }
+          }
+        });
         return r.id;
       });
   }
+
+  private readyShown = false;
 
   static getAllWindows(): BrowserWindow[] {
     return [...BrowserWindow.registry.values()];

@@ -62,6 +62,12 @@ class Host extends EventEmitter {
       case "app.activate":
         this.emit("app.activate", msg.has_visible_windows);
         return;
+      case "webContents.didStartLoading":
+        this.emit("webContents.didStartLoading", msg.window_id);
+        return;
+      case "webContents.didFinishLoad":
+        this.emit("webContents.didFinishLoad", msg.window_id);
+        return;
       case "menu.click":
         this.emit("menu.click", msg);
         return;
