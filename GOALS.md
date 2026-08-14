@@ -52,6 +52,24 @@ Numbered so we can point at "goal 3" in commits and issues. Every goal has a **d
 **G4.2** Compat matrix page shows API-by-API status with links to source.
 **G4.3** 3+ real open-source Electron apps run under Volt with published migration writeups.
 
+## M5. Universal migration
+
+The goal is that **any Electron app** boots on volt with the documented two-step shim. VS Code, Hyper, Simplenote, Standard Notes, Logseq, etc. are stress tests, not per-app targets. Every one that breaks exposes a missing rung in the compat matrix; the fix lands in the compat layer proper, never as an app-specific hack.
+
+**G5.1** A representative easy app boots.
+**Done when:** `electron/electron-quick-start` runs unmodified via the two-step shim.
+
+**G5.2** A medium-complexity app boots.
+**Done when:** an app with custom title bar + real IPC surface + persistence (e.g. Simplenote) boots and its primary flows work.
+
+**G5.3** The compat matrix is honest about what it can't do.
+**Done when:** every failure surfaced by trying apps from [`docs/hardest-apps.md`](docs/hardest-apps.md) is either fixed in the compat layer or listed in the matrix as missing with a linked issue.
+
+**G5.4** The hardest Electron apps run.
+**Done when:** apps that stress every part of Electron (native modules, custom protocols, deep-link handling, spawn-heavy processes) boot far enough to prove the compat layer is exhausted, not the app.
+
+The ladder in [`docs/hardest-apps.md`](docs/hardest-apps.md) exists to force coverage breadth; every rung passing is coverage evidence, not a per-app score.
+
 ## M-infinity. Deferred (post-traction)
 
 Shared-runtime daemon (stripped Chromium installed once per system, apps shrink to ~5 MB). Do not start this before M4 is done. It's the biggest architectural bet in the whole plan and only pays off after real adoption.

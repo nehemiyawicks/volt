@@ -58,6 +58,27 @@ pub enum Command {
     ShellOpenExternal { url: String, reply_id: String },
     #[serde(rename = "notification.show")]
     NotificationShow { options: NotificationOptions, reply_id: String },
+    #[serde(rename = "menu.setApplicationMenu")]
+    SetApplicationMenu { template: Vec<MenuItemSpec>, reply_id: String },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MenuItemSpec {
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub label: Option<String>,
+    #[serde(default, rename = "type")]
+    pub kind: Option<String>,
+    #[serde(default)]
+    pub role: Option<String>,
+    #[serde(default)]
+    pub accelerator: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+    #[serde(default)]
+    pub submenu: Vec<MenuItemSpec>,
 }
 
 #[allow(dead_code)]
@@ -179,4 +200,6 @@ pub enum Event {
         channel: String,
         args: Vec<serde_json::Value>,
     },
+    #[serde(rename = "menu.click")]
+    MenuClick { id: String },
 }

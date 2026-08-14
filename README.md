@@ -8,7 +8,7 @@ A lightweight, drop-in Electron alternative. Run your existing JavaScript or Typ
 
 Electron ships a full Chromium and Node.js runtime with every app. 150 to 350 MB of RAM per app just to sit idle. Tauri, Wails, and Electrobun solve the RAM problem but require rewriting your backend in Rust, Go, or a modified Bun entrypoint. Electron still wins because the switching cost keeps it entrenched.
 
-Volt's bet: **the compat layer is the killer feature.** You keep your `main.ts`, your IPC handlers, your `BrowserWindow` code. You lose 150 MB.
+Volt's bet: **the compat layer is the killer feature.** You keep your `main.ts`, your IPC handlers, your `BrowserWindow` code. You lose 150 MB. The target is any Electron app, not a specific one; see [`docs/hardest-apps.md`](docs/hardest-apps.md) for the ladder of apps that get tested on every release.
 
 | | Electron | Tauri | Electrobun | Volt |
 |---|---|---|---|---|

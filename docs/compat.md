@@ -35,7 +35,9 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `shell.openExternal()` | works | uses `open` (macOS), `start` (Windows), `xdg-open` (Linux) |
 | `Notification` | works | title, body, subtitle (macOS); no click events yet |
 | `Notification.isSupported()` | works | always true in v0.1 |
-| `Menu` | missing | v0.2 |
+| `Menu.buildFromTemplate` | works | roles, submenus, accelerators (CmdOrCtrl+N syntax), click handlers |
+| `Menu.setApplicationMenu` | works | macOS app menu; per-window on Windows/Linux |
+| `MenuItem` | partial | id, label, role, accelerator, enabled, submenu, click; no checkbox/radio state yet |
 | `Tray` | missing | v0.2 |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Notification, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, Notification, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -29,13 +29,53 @@ app.whenReady().then(async () => {
     },
   });
 
+  await Menu.setApplicationMenu(Menu.buildFromTemplate([
+    {
+      label: "quick-start",
+      submenu: [
+        { role: "about" },
+        { type: "separator" },
+        { role: "services" },
+        { type: "separator" },
+        { role: "hide" },
+        { role: "hideOthers" },
+        { role: "unhide" },
+        { type: "separator" },
+        { role: "quit" },
+      ],
+    },
+    {
+      label: "File",
+      submenu: [
+        {
+          label: "Say hi",
+          accelerator: "CmdOrCtrl+H",
+          click: () => new Notification({ title: "Volt", body: "menu click works" }).show(),
+        },
+        { type: "separator" },
+        { role: "close" },
+      ],
+    },
+    {
+      label: "Edit",
+      submenu: [
+        { role: "undo" },
+        { role: "redo" },
+        { type: "separator" },
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "selectAll" },
+      ],
+    },
+  ]));
+
   await win.loadURL("data:text/html," + encodeURIComponent(`
     <!doctype html>
     <html>
       <body style="font-family:system-ui;padding:2rem;line-height:1.6">
         <h1>Volt quick-start</h1>
-        <p>Renderer talks to main via <code>window.electronAPI</code> exposed by
-        an unmodified Electron preload script.</p>
+        <p>Try the <b>File</b> menu &rarr; <b>Say hi</b> (Cmd+H). Then the rest below.</p>
         <p><button id="ping">Ping</button> <span id="pong"></span></p>
         <p><button id="pick">Pick a file</button> <code id="picked"></code></p>
         <p><button id="gh">Open GitHub</button></p>

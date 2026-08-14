@@ -20,3 +20,4 @@ wry = { workspace = true }
 anyhow = { workspace = true }
 rfd = { workspace = true }
 notify-rust = { workspace = true }
+muda = { workspace = true }

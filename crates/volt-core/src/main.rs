@@ -14,6 +14,7 @@ use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy, EventLoopWi
 use tao::window::{Window, WindowBuilder, WindowId};
 use wry::{WebView, WebViewBuilder};
 
+mod menu;
 mod preload;
 mod protocol;
 use protocol::{Command as JsCommand, Event as JsEvent};
@@ -22,6 +23,7 @@ struct AppState {
     windows: HashMap<u64, WindowSlot>,
     next_window_id: u64,
     tx_to_js: Sender<JsEvent>,
+    app_menu: Option<muda::Menu>,
 }
 
 struct WindowSlot {
@@ -35,6 +37,7 @@ struct WindowSlot {
 enum HostEvent {
     Command(JsCommand),
     IpcFromRenderer { window_id: u64, raw: String },
+    MenuClick(String),
     ChildExited,
 }
 
@@ -61,8 +64,17 @@ fn main() -> Result<()> {
         windows: HashMap::new(),
         next_window_id: 1,
         tx_to_js,
+        app_menu: None,
     };
     let _ = state.tx_to_js.send(JsEvent::Ready);
+
+    let menu_proxy = proxy.clone();
+    muda::MenuEvent::set_event_handler(Some(move |ev: muda::MenuEvent| {
+        let id = ev.id().0.clone();
+        if !id.is_empty() {
+            let _ = menu_proxy.send_event(HostEvent::MenuClick(id));
+        }
+    }));
 
     event_loop.run(move |event, target, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -76,6 +88,9 @@ fn main() -> Result<()> {
                 if let Err(err) = handle_ipc_from_renderer(window_id, raw, &state) {
                     eprintln!("[volt-core] ipc: {err:#}");
                 }
+            }
+            Event::UserEvent(HostEvent::MenuClick(id)) => {
+                let _ = state.tx_to_js.send(JsEvent::MenuClick { id });
             }
             Event::UserEvent(HostEvent::ChildExited) => *control_flow = ControlFlow::Exit,
             Event::WindowEvent {
@@ -392,6 +407,19 @@ fn handle_command(
                 reply_id,
                 value: serde_json::json!({ "ok": status.map(|s| s.success()).unwrap_or(false) }),
             })?;
+        }
+        JsCommand::SetApplicationMenu { template, reply_id } => {
+            let m = menu::build_menu(&template)?;
+            #[cfg(target_os = "macos")]
+            m.init_for_nsapp();
+            #[cfg(not(target_os = "macos"))]
+            {
+                for (_, slot) in state.windows.iter() {
+                    let _ = m.init_for_hwnd_with_theme(slot.window.hwnd() as _, muda::MenuTheme::Auto);
+                }
+            }
+            state.app_menu = Some(m);
+            ack(&state.tx_to_js, reply_id)?;
         }
         JsCommand::NotificationShow { options, reply_id } => {
             let mut n = notify_rust::Notification::new();
