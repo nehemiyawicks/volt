@@ -346,6 +346,17 @@ fn handle_command(
                 .with_on_page_load_handler(move |ev, _url| {
                     let finished = matches!(ev, wry::PageLoadEvent::Finished);
                     let _ = load_proxy.send_event(HostEvent::PageLoad { window_id: id, finished });
+                })
+                .with_new_window_req_handler(|url| {
+                    let opener = if cfg!(target_os = "macos") { "open" }
+                        else if cfg!(target_os = "windows") { "cmd" }
+                        else { "xdg-open" };
+                    if cfg!(target_os = "windows") {
+                        let _ = Command::new(opener).args(["/C", "start", "", &url]).spawn();
+                    } else {
+                        let _ = Command::new(opener).arg(&url).spawn();
+                    }
+                    false
                 });
             if let Some(wp) = options.web_preferences.as_ref() {
                 if let Some(path) = wp.preload.as_deref() {

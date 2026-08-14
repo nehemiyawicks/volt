@@ -221,4 +221,10 @@ export class WebContents extends EventEmitter {
   async reload(): Promise<void> {
     await this.executeJavaScript("location.reload()");
   }
+
+  setWindowOpenHandler(_handler: (details: { url: string }) => { action: "allow" | "deny" }): void {
+    // v0.1: all target=_blank / window.open requests are routed to the OS
+    // browser via a Rust-side default. The handler is stored but not
+    // consulted until we can round-trip a decision back through wry.
+  }
 }

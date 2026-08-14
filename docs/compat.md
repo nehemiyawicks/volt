@@ -78,6 +78,7 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `nativeImage` | stub | `createFromPath`, `createEmpty`, `createFromBuffer`, `createFromDataURL` return objects that pass through the path string. `toPNG`/`toJPEG`/`getSize` return zeros. Enough to let apps that pass paths through unchanged (Tray icons, Notifications) work; not enough for image manipulation. |
 | `webContents.getURL()` | works | via `executeJavaScript('location.href')` |
 | `webContents.getTitle()` | stub | returns empty string |
+| `webContents.setWindowOpenHandler` | partial | in v0.1 all `target=_blank` and `window.open` requests unconditionally open in the OS default browser via `shell.openExternal`; the handler is stored but not consulted (matches what most apps configure it to do anyway) |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |
 | `contextBridge.exposeInMainWorld` | works | via `webPreferences.preload`; runs in main world (no isolated world yet) |
