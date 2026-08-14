@@ -38,6 +38,22 @@ class App extends EventEmitter {
     process.exit(code);
   }
 
+  isReady(): boolean {
+    return true;
+  }
+
+  isPackaged = process.env.VOLT_HOST === "1" && !!process.env.VOLT_MANIFEST_BUNDLED;
+
+  setBadgeCount(_count: number): boolean { return false; }
+  getBadgeCount(): number { return 0; }
+  setAppUserModelId(_id: string): void {}
+  setAsDefaultProtocolClient(_protocol: string): boolean { return false; }
+  removeAsDefaultProtocolClient(_protocol: string): boolean { return false; }
+  isDefaultProtocolClient(_protocol: string): boolean { return false; }
+  requestSingleInstanceLock(): boolean { return true; }
+  hasSingleInstanceLock(): boolean { return true; }
+  releaseSingleInstanceLock(): void {}
+
   getName(): string {
     return process.env.VOLT_APP_NAME ?? "Volt App";
   }

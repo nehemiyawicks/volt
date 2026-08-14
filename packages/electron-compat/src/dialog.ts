@@ -61,6 +61,20 @@ function unwrap<A, B>(a: A | B, b: B | undefined): B {
 }
 
 export const dialog = {
+  showErrorBox(title: string, content: string): void {
+    void host().request("dialog.showMessageBox", {
+      options: { message: content, title, type: "error", buttons: ["OK"] },
+    });
+  },
+
+  async showMessageBoxSync(
+    windowOrOptions: BrowserWindow | MessageBoxOptions,
+    maybeOptions?: MessageBoxOptions,
+  ): Promise<number> {
+    const r = await this.showMessageBox(windowOrOptions, maybeOptions);
+    return r.response;
+  },
+
   async showMessageBox(
     windowOrOptions: BrowserWindow | MessageBoxOptions,
     maybeOptions?: MessageBoxOptions,

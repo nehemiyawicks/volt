@@ -19,6 +19,13 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `app.getLocale()` | partial | parsed from `$LANG`; no CFLocale integration yet |
 | `app.setName()` | works | sets `VOLT_APP_NAME` for subsequent `getName`/`getPath` calls |
 | `app.exit()` | works | |
+| `app.isReady()` | works | (always true after whenReady resolves) |
+| `app.isPackaged` | partial | true when running from a `.app` bundle |
+| `app.setBadgeCount` / `getBadgeCount` | stub | no-op today; macOS dock badge is v0.2 |
+| `app.setAppUserModelId` | stub | no-op |
+| `app.setAsDefaultProtocolClient` / friends | stub | protocol-handler registration is v0.3 |
+| `app.requestSingleInstanceLock` | stub | always returns true (no cross-process guard yet) |
+| `session.defaultSession` | stub | class exists with cookies, webRequest, clearCache etc. as no-ops so `session.defaultSession.clearCache()` doesn't crash the app; real backend v0.3+ |
 | `BrowserWindow` constructor | works | `title`, `width`, `height`, `x`, `y`, `resizable`, `minimizable`, `maximizable`, `alwaysOnTop`, `frame`, `transparent`, `show`, `webPreferences` |
 | `BrowserWindow.loadURL()` | works | |
 | `BrowserWindow.loadFile()` | works | resolves to `file://` URL |
@@ -46,6 +53,8 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `ipcMain.handleOnce()` | works | |
 | `ipcMain.removeHandler()` | works | |
 | `dialog.showMessageBox()` | works | up to 3 custom buttons; returns the clicked index; supports `type: info/warning/error` |
+| `dialog.showErrorBox(title, content)` | works | one-shot error dialog with OK button |
+| `dialog.showMessageBoxSync()` | partial | async under the hood (returns the response index directly) |
 | `dialog.showOpenDialog()` | works | files, folders, multi-select, filters |
 | `dialog.showSaveDialog()` | works | filters, default path |
 | `shell.openExternal()` | works | uses `open` (macOS), `start` (Windows), `xdg-open` (Linux) |
