@@ -10,10 +10,11 @@ use std::thread;
 use anyhow::{anyhow, Context, Result};
 use serde::Deserialize;
 use tao::event::{Event, WindowEvent};
-use tao::event_loop::{ControlFlow, EventLoop, EventLoopProxy};
+use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget};
 use tao::window::{Window, WindowBuilder, WindowId};
 use wry::{WebView, WebViewBuilder};
 
+mod preload;
 mod protocol;
 use protocol::{Command as JsCommand, Event as JsEvent};
 
@@ -33,6 +34,7 @@ struct WindowSlot {
 #[derive(Debug)]
 enum HostEvent {
     Command(JsCommand),
+    IpcFromRenderer { window_id: u64, raw: String },
     ChildExited,
 }
 
@@ -48,7 +50,7 @@ struct Manifest {
 
 fn main() -> Result<()> {
     let manifest = load_manifest()?;
-    let event_loop: EventLoop<HostEvent> = EventLoop::with_user_event();
+    let event_loop = EventLoopBuilder::<HostEvent>::with_user_event().build();
     let proxy = event_loop.create_proxy();
 
     let (tx_to_js, rx_to_js) = channel::<JsEvent>();
@@ -66,8 +68,13 @@ fn main() -> Result<()> {
         *control_flow = ControlFlow::Wait;
         match event {
             Event::UserEvent(HostEvent::Command(cmd)) => {
-                if let Err(err) = handle_command(cmd, &mut state, target) {
+                if let Err(err) = handle_command(cmd, &mut state, target, &proxy) {
                     eprintln!("[volt-core] {err:#}");
+                }
+            }
+            Event::UserEvent(HostEvent::IpcFromRenderer { window_id, raw }) => {
+                if let Err(err) = handle_ipc_from_renderer(window_id, raw, &state) {
+                    eprintln!("[volt-core] ipc: {err:#}");
                 }
             }
             Event::UserEvent(HostEvent::ChildExited) => *control_flow = ControlFlow::Exit,
@@ -91,7 +98,7 @@ fn main() -> Result<()> {
             }
             _ => {}
         }
-    });
+    })
 }
 
 fn load_manifest() -> Result<Manifest> {
@@ -176,7 +183,8 @@ fn pump_events_to_js(mut stdin: std::process::ChildStdin, rx: Receiver<JsEvent>)
 fn handle_command(
     cmd: JsCommand,
     state: &mut AppState,
-    target: &tao::event_loop::EventLoopWindowTarget<HostEvent>,
+    target: &EventLoopWindowTarget<HostEvent>,
+    proxy: &EventLoopProxy<HostEvent>,
 ) -> Result<()> {
     match cmd {
         JsCommand::CreateWindow { options, reply_id } => {
@@ -195,7 +203,16 @@ fn handle_command(
             let window = builder.build(target)?;
             let tao_id = window.id();
 
-            let wv = WebViewBuilder::new(&window);
+            let ipc_proxy = proxy.clone();
+            let wv = WebViewBuilder::new(&window)
+                .with_initialization_script(preload::PRELOAD_JS)
+                .with_ipc_handler(move |req| {
+                    let body = req.body().to_string();
+                    let _ = ipc_proxy.send_event(HostEvent::IpcFromRenderer {
+                        window_id: id,
+                        raw: body,
+                    });
+                });
             let wv = match (options.url.as_deref(), options.html.as_deref()) {
                 (Some(u), _) => wv.with_url(u),
                 (_, Some(h)) => wv.with_html(h),
@@ -232,38 +249,136 @@ fn handle_command(
                 value: serde_json::json!({ "response": response, "checkboxChecked": false }),
             })?;
         }
+        JsCommand::ShowOpenDialog { options, reply_id } => {
+            let value = open_dialog(options);
+            state.tx_to_js.send(JsEvent::Reply { reply_id, value })?;
+        }
+        JsCommand::ShowSaveDialog { options, reply_id } => {
+            let value = save_dialog(options);
+            state.tx_to_js.send(JsEvent::Reply { reply_id, value })?;
+        }
+        JsCommand::IpcResult { window_id, invoke_id, value, error } => {
+            let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
+            let script = format!(
+                "window.__volt_deliver({}, {}, {})",
+                serde_json::to_string(&invoke_id).unwrap(),
+                serde_json::to_string(&value).unwrap(),
+                match error {
+                    Some(e) => serde_json::to_string(&e).unwrap(),
+                    None => "null".into(),
+                },
+            );
+            slot.webview.evaluate_script(&script)?;
+        }
+    }
+    Ok(())
+}
+
+fn handle_ipc_from_renderer(window_id: u64, raw: String, state: &AppState) -> Result<()> {
+    #[derive(Deserialize)]
+    struct Envelope {
+        volt: String,
+        #[serde(default)]
+        invoke_id: Option<String>,
+        channel: String,
+        #[serde(default)]
+        args: Vec<serde_json::Value>,
+    }
+    let env: Envelope = serde_json::from_str(&raw)?;
+    match env.volt.as_str() {
+        "invoke" => {
+            let invoke_id = env.invoke_id.ok_or_else(|| anyhow!("invoke missing invoke_id"))?;
+            state.tx_to_js.send(JsEvent::IpcInvoke {
+                window_id,
+                invoke_id,
+                channel: env.channel,
+                args: env.args,
+            })?;
+        }
+        "send" => {
+            state.tx_to_js.send(JsEvent::IpcInvoke {
+                window_id,
+                invoke_id: String::new(),
+                channel: env.channel,
+                args: env.args,
+            })?;
+        }
+        other => return Err(anyhow!("unknown ipc verb: {other}")),
     }
     Ok(())
 }
 
 fn native_message_box(opts: &protocol::MessageBoxOptions) -> u32 {
-    #[cfg(target_os = "macos")]
-    {
-        let title = opts.title.clone().unwrap_or_else(|| "Volt".into());
-        let script = format!(
-            "display dialog {msg} with title {ttl} buttons {btns} default button 1",
-            msg = as_applescript_str(&opts.message),
-            ttl = as_applescript_str(&title),
-            btns = as_applescript_button_list(opts.buttons.as_deref().unwrap_or(&["OK".into()])),
-        );
-        let _ = Command::new("osascript").args(["-e", &script]).status();
-        return 0;
+    let mut dlg = rfd::MessageDialog::new()
+        .set_title(opts.title.as_deref().unwrap_or("Volt"))
+        .set_description(&opts.message);
+    if let Some(detail) = &opts.detail {
+        dlg = dlg.set_description(&format!("{}\n\n{}", opts.message, detail));
     }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = opts;
-        eprintln!("[volt-core] message box not implemented on this platform");
-        0
-    }
+    let _ = dlg.show();
+    0
 }
 
-#[cfg(target_os = "macos")]
-fn as_applescript_str(s: &str) -> String {
-    format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""))
+fn open_dialog(opts: protocol::OpenDialogOptions) -> serde_json::Value {
+    let props: Vec<String> = opts.properties.clone();
+    let is_dir = props.iter().any(|p| p == "openDirectory");
+    let multi = props.iter().any(|p| p == "multiSelections");
+
+    let mut dlg = rfd::FileDialog::new();
+    if let Some(t) = &opts.title {
+        dlg = dlg.set_title(t);
+    }
+    if let Some(p) = &opts.default_path {
+        dlg = dlg.set_directory(p);
+    }
+    for f in &opts.filters {
+        let exts: Vec<&str> = f.extensions.iter().map(|s| s.as_str()).collect();
+        dlg = dlg.add_filter(&f.name, &exts);
+    }
+
+    let paths: Vec<String> = match (is_dir, multi) {
+        (true, true) => dlg
+            .pick_folders()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|p| p.to_string_lossy().to_string())
+            .collect(),
+        (true, false) => dlg
+            .pick_folder()
+            .map(|p| vec![p.to_string_lossy().to_string()])
+            .unwrap_or_default(),
+        (false, true) => dlg
+            .pick_files()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|p| p.to_string_lossy().to_string())
+            .collect(),
+        (false, false) => dlg
+            .pick_file()
+            .map(|p| vec![p.to_string_lossy().to_string()])
+            .unwrap_or_default(),
+    };
+
+    serde_json::json!({
+        "canceled": paths.is_empty(),
+        "filePaths": paths,
+    })
 }
 
-#[cfg(target_os = "macos")]
-fn as_applescript_button_list(buttons: &[String]) -> String {
-    let parts: Vec<String> = buttons.iter().map(|b| as_applescript_str(b)).collect();
-    format!("{{{}}}", parts.join(", "))
+fn save_dialog(opts: protocol::SaveDialogOptions) -> serde_json::Value {
+    let mut dlg = rfd::FileDialog::new();
+    if let Some(t) = &opts.title {
+        dlg = dlg.set_title(t);
+    }
+    if let Some(p) = &opts.default_path {
+        dlg = dlg.set_file_name(p);
+    }
+    for f in &opts.filters {
+        let exts: Vec<&str> = f.extensions.iter().map(|s| s.as_str()).collect();
+        dlg = dlg.add_filter(&f.name, &exts);
+    }
+    match dlg.save_file() {
+        Some(p) => serde_json::json!({ "canceled": false, "filePath": p.to_string_lossy() }),
+        None => serde_json::json!({ "canceled": true }),
+    }
 }

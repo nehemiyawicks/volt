@@ -50,6 +50,9 @@ class Host extends EventEmitter {
       case "app.allWindowsClosed":
         this.emit("app.allWindowsClosed");
         return;
+      case "ipc.invoke":
+        this.emit("ipc.invoke", msg);
+        return;
     }
   }
 

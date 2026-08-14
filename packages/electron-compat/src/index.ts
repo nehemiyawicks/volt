@@ -5,8 +5,11 @@ export { ipcMain, ipcRenderer } from "./ipc.js";
 export type { IpcMainInvokeEvent } from "./ipc.js";
 export { dialog } from "./dialog.js";
 export type {
+  FileFilter,
   MessageBoxOptions,
   MessageBoxReturnValue,
+  OpenDialogOptions,
   OpenDialogReturnValue,
+  SaveDialogOptions,
   SaveDialogReturnValue,
 } from "./dialog.js";

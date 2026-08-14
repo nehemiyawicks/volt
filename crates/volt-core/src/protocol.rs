@@ -15,6 +15,17 @@ pub enum Command {
     Quit,
     #[serde(rename = "dialog.showMessageBox")]
     ShowMessageBox { options: MessageBoxOptions, reply_id: String },
+    #[serde(rename = "dialog.showOpenDialog")]
+    ShowOpenDialog { options: OpenDialogOptions, reply_id: String },
+    #[serde(rename = "dialog.showSaveDialog")]
+    ShowSaveDialog { options: SaveDialogOptions, reply_id: String },
+    #[serde(rename = "ipc.result")]
+    IpcResult {
+        window_id: u64,
+        invoke_id: String,
+        value: serde_json::Value,
+        error: Option<String>,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -28,12 +39,51 @@ pub struct WindowOptions {
     pub html: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageBoxOptions {
     pub message: String,
     pub title: Option<String>,
     pub buttons: Option<Vec<String>>,
+    #[serde(default)]
+    pub detail: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenDialogOptions {
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub default_path: Option<String>,
+    #[serde(default)]
+    pub button_label: Option<String>,
+    #[serde(default)]
+    pub filters: Vec<FileFilter>,
+    #[serde(default)]
+    pub properties: Vec<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveDialogOptions {
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub default_path: Option<String>,
+    #[serde(default)]
+    pub button_label: Option<String>,
+    #[serde(default)]
+    pub filters: Vec<FileFilter>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FileFilter {
+    pub name: String,
+    pub extensions: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -47,4 +97,11 @@ pub enum Event {
     AllWindowsClosed,
     #[serde(rename = "reply")]
     Reply { reply_id: String, value: serde_json::Value },
+    #[serde(rename = "ipc.invoke")]
+    IpcInvoke {
+        window_id: u64,
+        invoke_id: String,
+        channel: String,
+        args: Vec<serde_json::Value>,
+    },
 }

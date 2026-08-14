@@ -4,9 +4,17 @@ Volt is an Electron-alternative desktop framework. The core bet: **the compat la
 
 ## The Bet
 
-Electron dominates because switching costs are enormous. Volt eats those switching costs, then wins on RAM (30 to 50 MB vs 150 to 350 MB) and installer size (<15 MB vs 100+ MB).
+Electron dominates because switching costs are enormous. Volt eats the switching cost, then wins on RAM and installer size.
 
-The technical bet: we don't need to rebuild what Tauri already got right (`wry`, `tao`). We layer on top and put all our effort into the differentiator, the Electron API surface, exposed to both JS and TS with equal ergonomics.
+The technical bet: don't rebuild what Tauri already got right (`wry`, `tao`). Layer on top and put every hour of effort into the differentiator: the Electron API surface, exposed to both JS and TS with matching ergonomics.
+
+## Competitive Position
+
+Electrobun is the closest neighbour: Bun + system WebView, lightweight, targets the same RAM/installer footprint. Electrobun does not ship an Electron compat layer, so migrating to it means rewriting `main.ts` against a new API. That's the entire wedge.
+
+Every doc, every issue thread, every release note leads with compat, not RAM. RAM is table stakes against Electrobun; compat is why someone picks volt over Electrobun.
+
+Compat matrix coverage is the KPI. A dev who migrates and hits a missing API does not come back, so [`docs/compat.md`](docs/compat.md) is a first-class deliverable and every PR that touches an API updates it.
 
 ## Architecture
 

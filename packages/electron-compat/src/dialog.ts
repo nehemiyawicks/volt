@@ -1,6 +1,11 @@
 import { host } from "./host.js";
 import type { BrowserWindow } from "./browser-window.js";
 
+export interface FileFilter {
+  name: string;
+  extensions: string[];
+}
+
 export interface MessageBoxOptions {
   message: string;
   title?: string;
@@ -16,9 +21,34 @@ export interface MessageBoxReturnValue {
   checkboxChecked: boolean;
 }
 
+export interface OpenDialogOptions {
+  title?: string;
+  defaultPath?: string;
+  buttonLabel?: string;
+  filters?: FileFilter[];
+  properties?: Array<
+    | "openFile"
+    | "openDirectory"
+    | "multiSelections"
+    | "showHiddenFiles"
+    | "createDirectory"
+    | "promptToCreate"
+    | "noResolveAliases"
+    | "treatPackageAsDirectory"
+    | "dontAddToRecent"
+  >;
+}
+
 export interface OpenDialogReturnValue {
   canceled: boolean;
   filePaths: string[];
+}
+
+export interface SaveDialogOptions {
+  title?: string;
+  defaultPath?: string;
+  buttonLabel?: string;
+  filters?: FileFilter[];
 }
 
 export interface SaveDialogReturnValue {
@@ -26,20 +56,32 @@ export interface SaveDialogReturnValue {
   filePath?: string;
 }
 
+function unwrap<A, B>(a: A | B, b: B | undefined): B {
+  return (b ?? (a as unknown as B)) as B;
+}
+
 export const dialog = {
   async showMessageBox(
-    _window: BrowserWindow | MessageBoxOptions,
-    options?: MessageBoxOptions,
+    windowOrOptions: BrowserWindow | MessageBoxOptions,
+    maybeOptions?: MessageBoxOptions,
   ): Promise<MessageBoxReturnValue> {
-    const opts = options ?? (_window as MessageBoxOptions);
-    return (await host().request("dialog.showMessageBox", { options: opts })) as MessageBoxReturnValue;
+    const options = unwrap(windowOrOptions, maybeOptions);
+    return (await host().request("dialog.showMessageBox", { options })) as MessageBoxReturnValue;
   },
 
-  async showOpenDialog(): Promise<OpenDialogReturnValue> {
-    return { canceled: true, filePaths: [] };
+  async showOpenDialog(
+    windowOrOptions: BrowserWindow | OpenDialogOptions,
+    maybeOptions?: OpenDialogOptions,
+  ): Promise<OpenDialogReturnValue> {
+    const options = unwrap(windowOrOptions, maybeOptions);
+    return (await host().request("dialog.showOpenDialog", { options })) as OpenDialogReturnValue;
   },
 
-  async showSaveDialog(): Promise<SaveDialogReturnValue> {
-    return { canceled: true };
+  async showSaveDialog(
+    windowOrOptions: BrowserWindow | SaveDialogOptions,
+    maybeOptions?: SaveDialogOptions,
+  ): Promise<SaveDialogReturnValue> {
+    const options = unwrap(windowOrOptions, maybeOptions);
+    return (await host().request("dialog.showSaveDialog", { options })) as SaveDialogReturnValue;
   },
 };

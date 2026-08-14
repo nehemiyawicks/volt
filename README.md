@@ -6,16 +6,17 @@ A lightweight, drop-in Electron alternative. Run your existing JavaScript or Typ
 
 ## Why
 
-Electron ships a full Chromium and Node.js runtime with every app. That's 150 to 350 MB of RAM per app just to sit idle. Tauri, Wails, and Electrobun solve the RAM problem, but they all require rewriting your backend in Rust, Go, or something else. That's why Electron still wins: the switching cost keeps it entrenched.
+Electron ships a full Chromium and Node.js runtime with every app. 150 to 350 MB of RAM per app just to sit idle. Tauri, Wails, and Electrobun solve the RAM problem but require rewriting your backend in Rust, Go, or a modified Bun entrypoint. Electron still wins because the switching cost keeps it entrenched.
 
-Volt's bet: **the compat layer is the killer feature.**
+Volt's bet: **the compat layer is the killer feature.** You keep your `main.ts`, your IPC handlers, your `BrowserWindow` code. You lose 150 MB.
 
-| | Electron | Tauri | Volt |
-|---|---|---|---|
-| Idle RAM (single window) | 150 to 350 MB | 30 to 50 MB | ~40 MB |
-| Installer size | 100+ MB | <10 MB | <15 MB |
-| Backend language | JS / TS | Rust | JS / TS |
-| Migrate an existing Electron app | N/A | Full rewrite | `npm install` + one alias |
+| | Electron | Tauri | Electrobun | Volt |
+|---|---|---|---|---|
+| Idle RAM (single window) | 150 to 350 MB | 30 to 50 MB | ~35 MB | ~40 MB |
+| Installer size | 100+ MB | <10 MB | ~12 MB | <15 MB |
+| Backend language | JS / TS | Rust | Bun (partial rewrite) | JS / TS |
+| Runs an unmodified Electron `main.ts` | yes (native) | no | no | **yes** |
+| Uses `import { app, BrowserWindow } from 'electron'` unchanged | yes | no | no | **yes** |
 
 ## What ships today
 
@@ -105,4 +106,4 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for ground rules.
 
 ## License
 
-[Apache-2.0](LICENSE). Same freedom to use, modify, and distribute as MIT, with an explicit patent grant. See [`NOTICE`](NOTICE) for attribution of the third-party crates Volt builds on.
+[Apache-2.0](LICENSE). See [`NOTICE`](NOTICE) for third-party attributions.

@@ -1,6 +1,10 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 
 ipcMain.handle("ping", () => "pong");
+ipcMain.handle("pickFile", async () => {
+  const r = await dialog.showOpenDialog({ properties: ["openFile"] });
+  return r.canceled ? null : r.filePaths[0];
+});
 
 app.whenReady().then(async () => {
   const win = new BrowserWindow({
@@ -14,22 +18,20 @@ app.whenReady().then(async () => {
     <html>
       <body style="font-family:system-ui;padding:2rem">
         <h1>Volt quick-start</h1>
-        <p>Renderer view. See <code>examples/quick-start/src/main.ts</code>.</p>
-        <button id="alert">Show native message box</button>
+        <p>IPC round-trip: <button id="ping">Ping</button> <span id="pong"></span></p>
+        <p>Native dialog: <button id="pick">Pick a file</button> <code id="picked"></code></p>
         <script>
-          document.getElementById('alert').onclick = () => {
-            fetch('volt:alert').catch(() => {});
+          document.getElementById('ping').onclick = async () => {
+            document.getElementById('pong').textContent = await window.volt.invoke('ping');
+          };
+          document.getElementById('pick').onclick = async () => {
+            const path = await window.volt.invoke('pickFile');
+            document.getElementById('picked').textContent = path ?? '(cancelled)';
           };
         </script>
       </body>
     </html>
   `));
-
-  await dialog.showMessageBox({
-    message: "Volt is running.",
-    title: "Volt quick-start",
-    buttons: ["Nice"],
-  });
 });
 
 app.on("window-all-closed", () => app.quit());
