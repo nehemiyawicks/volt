@@ -1,0 +1,20 @@
+[package]
+name = "volt-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Volt host binary: a lightweight native shell that runs Electron-compatible apps via wry + tao"
+
+[[bin]]
+name = "volt-core"
+path = "src/main.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tao = { workspace = true }
+wry = { workspace = true }
+anyhow = { workspace = true }

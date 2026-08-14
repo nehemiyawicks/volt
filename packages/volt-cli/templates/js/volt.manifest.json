@@ -1,0 +1,5 @@
+{
+  "name": "my-volt-app",
+  "entry": "src/main.js",
+  "runtime": "auto"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "volt-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Volt — a lightweight, drop-in Electron alternative",
+  "license": "Apache-2.0",
+  "author": "The Volt Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nehemiyawicks/volt.git"
+  },
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:core": "cargo build --release -p volt-core",
+    "dev:example": "npm --workspace=examples/quick-start run dev",
+    "clean": "npm run clean --workspaces --if-present && cargo clean"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

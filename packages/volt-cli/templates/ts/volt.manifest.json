@@ -1,0 +1,5 @@
+{
+  "name": "my-volt-app",
+  "entry": "src/main.ts",
+  "runtime": "bun"
+}

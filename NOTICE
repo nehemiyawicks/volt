@@ -1,0 +1,17 @@
+Volt
+Copyright 2026 The Volt Contributors
+
+This product includes software developed as part of the Volt project
+(https://github.com/) and is licensed under the Apache License, Version 2.0.
+
+This product depends on and links against third-party open source software.
+Notable dependencies and their licenses:
+
+  - wry (Apache-2.0 OR MIT) — cross-platform WebView library, part of the Tao/Wry
+    project. https://github.com/tauri-apps/wry
+  - tao (Apache-2.0) — cross-platform window management, part of the Tao/Wry
+    project. https://github.com/tauri-apps/tao
+  - serde, serde_json (Apache-2.0 OR MIT) — Rust serialization framework.
+  - tokio (MIT) — async runtime for Rust.
+
+See each dependency's own LICENSE file for full terms.

@@ -1,0 +1,23 @@
+{
+  "name": "@volt/cli",
+  "version": "0.1.0",
+  "description": "Volt CLI: init, dev, build",
+  "license": "Apache-2.0",
+  "author": "The Volt Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nehemiyawicks/volt.git",
+    "directory": "packages/volt-cli"
+  },
+  "type": "module",
+  "bin": {
+    "volt": "./src/index.js"
+  },
+  "files": ["src", "templates", "README.md"],
+  "scripts": {
+    "build": "echo \"volt-cli is source-only in v0.1\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

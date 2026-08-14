@@ -1,0 +1,17 @@
+{
+  "name": "quick-start",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "src/main.ts",
+  "imports": {
+    "electron": "@volt/electron-compat"
+  },
+  "scripts": {
+    "dev": "volt dev"
+  },
+  "dependencies": {
+    "@volt/electron-compat": "*",
+    "@volt/cli": "*"
+  }
+}

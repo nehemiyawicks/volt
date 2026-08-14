@@ -1,0 +1,19 @@
+{
+  "name": "my-volt-app",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/main.ts",
+  "imports": {
+    "electron": "@volt/electron-compat"
+  },
+  "scripts": {
+    "dev": "volt dev"
+  },
+  "dependencies": {
+    "@volt/electron-compat": "^0.1.0",
+    "@volt/cli": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

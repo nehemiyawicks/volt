@@ -1,0 +1,5 @@
+{
+  "name": "quick-start",
+  "entry": "src/main.ts",
+  "runtime": "auto"
+}
