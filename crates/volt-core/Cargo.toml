@@ -8,6 +8,10 @@ repository.workspace = true
 rust-version.workspace = true
 description = "Volt host binary: a lightweight native shell that runs Electron-compatible apps via wry + tao"
 
+[lib]
+name = "volt_core"
+path = "src/lib.rs"
+
 [[bin]]
 name = "volt-core"
 path = "src/main.rs"
