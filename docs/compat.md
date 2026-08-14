@@ -66,6 +66,9 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `screen.getPrimaryDisplay()` | works | via tao MonitorHandle |
 | `screen.getAllDisplays()` | works | |
 | `nativeTheme.shouldUseDarkColors` | partial | polled from macOS `defaults read -g AppleInterfaceStyle`; no live change events yet |
+| `nativeImage` | stub | `createFromPath`, `createEmpty`, `createFromBuffer`, `createFromDataURL` return objects that pass through the path string. `toPNG`/`toJPEG`/`getSize` return zeros. Enough to let apps that pass paths through unchanged (Tray icons, Notifications) work; not enough for image manipulation. |
+| `webContents.getURL()` | works | via `executeJavaScript('location.href')` |
+| `webContents.getTitle()` | stub | returns empty string |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |
 | `contextBridge.exposeInMainWorld` | works | via `webPreferences.preload`; runs in main world (no isolated world yet) |

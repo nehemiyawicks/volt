@@ -501,11 +501,16 @@ fn handle_command(
             let m = menu::build_menu(&template)?;
             #[cfg(target_os = "macos")]
             m.init_for_nsapp();
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(target_os = "windows")]
             {
+                use tao::platform::windows::WindowExtWindows;
                 for (_, slot) in state.windows.iter() {
-                    let _ = m.init_for_hwnd_with_theme(slot.window.hwnd() as _, muda::MenuTheme::Auto);
+                    let _ = m.init_for_hwnd(slot.window.hwnd() as _);
                 }
+            }
+            #[cfg(all(unix, not(target_os = "macos")))]
+            {
+                eprintln!("[volt-core] setApplicationMenu: Linux menu bar not implemented yet");
             }
             state.app_menu = Some(m);
             ack(&state.tx_to_js, reply_id)?;
