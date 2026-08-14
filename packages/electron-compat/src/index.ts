@@ -21,3 +21,6 @@ export type { MenuItemConstructorOptions, MenuItemRole, MenuItemType } from "./m
 export { clipboard } from "./clipboard.js";
 export { globalShortcut } from "./global-shortcut.js";
 export { Tray } from "./tray.js";
+export { screen } from "./screen.js";
+export type { Display } from "./screen.js";
+export { nativeTheme } from "./native-theme.js";

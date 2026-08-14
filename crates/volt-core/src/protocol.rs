@@ -72,6 +72,12 @@ pub enum Command {
     GlobalShortcutUnregisterAll { reply_id: String },
     #[serde(rename = "app.beforeQuit")]
     AppBeforeQuit { reply_id: String },
+    #[serde(rename = "screen.getPrimaryDisplay")]
+    ScreenGetPrimaryDisplay { reply_id: String },
+    #[serde(rename = "screen.getAllDisplays")]
+    ScreenGetAllDisplays { reply_id: String },
+    #[serde(rename = "nativeTheme.shouldUseDarkColors")]
+    NativeThemeShouldUseDarkColors { reply_id: String },
     #[serde(rename = "tray.create")]
     TrayCreate {
         id: String,

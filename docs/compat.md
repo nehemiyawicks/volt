@@ -63,6 +63,9 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `Tray.setContextMenu` | works | reuses the `Menu` template shape |
 | `Tray.destroy` / `isDestroyed` | works | |
 | `Tray` `click` event | works | fires on left click |
+| `screen.getPrimaryDisplay()` | works | via tao MonitorHandle |
+| `screen.getAllDisplays()` | works | |
+| `nativeTheme.shouldUseDarkColors` | partial | polled from macOS `defaults read -g AppleInterfaceStyle`; no live change events yet |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |
 | `contextBridge.exposeInMainWorld` | works | via `webPreferences.preload`; runs in main world (no isolated world yet) |

@@ -577,6 +577,19 @@ fn handle_command(
         JsCommand::AppBeforeQuit { reply_id } => {
             ack(&state.tx_to_js, reply_id)?;
         }
+        JsCommand::ScreenGetPrimaryDisplay { reply_id } => {
+            let value = target.primary_monitor().map(monitor_to_display)
+                .unwrap_or_else(|| serde_json::json!({}));
+            state.tx_to_js.send(JsEvent::Reply { reply_id, value })?;
+        }
+        JsCommand::ScreenGetAllDisplays { reply_id } => {
+            let list: Vec<serde_json::Value> = target.available_monitors().map(monitor_to_display).collect();
+            state.tx_to_js.send(JsEvent::Reply { reply_id, value: serde_json::Value::Array(list) })?;
+        }
+        JsCommand::NativeThemeShouldUseDarkColors { reply_id } => {
+            let dark = detect_dark_mode();
+            state.tx_to_js.send(JsEvent::Reply { reply_id, value: serde_json::json!(dark) })?;
+        }
         JsCommand::TrayCreate { id, icon_path, tooltip, menu, reply_id } => {
             let t = tray::create(&id, icon_path.as_deref(), tooltip.as_deref(), &menu)?;
             state.trays.insert(id, t);
@@ -755,6 +768,38 @@ fn save_dialog(opts: protocol::SaveDialogOptions) -> serde_json::Value {
     match dlg.save_file() {
         Some(p) => serde_json::json!({ "canceled": false, "filePath": p.to_string_lossy() }),
         None => serde_json::json!({ "canceled": true }),
+    }
+}
+
+fn monitor_to_display(m: tao::monitor::MonitorHandle) -> serde_json::Value {
+    let scale = m.scale_factor();
+    let size = m.size().to_logical::<f64>(scale);
+    let pos = m.position().to_logical::<f64>(scale);
+    serde_json::json!({
+        "id": m.name(),
+        "label": m.name().unwrap_or_default(),
+        "scaleFactor": scale,
+        "size": { "width": size.width, "height": size.height },
+        "bounds": { "x": pos.x, "y": pos.y, "width": size.width, "height": size.height },
+        "workArea": { "x": pos.x, "y": pos.y, "width": size.width, "height": size.height },
+        "workAreaSize": { "width": size.width, "height": size.height },
+    })
+}
+
+fn detect_dark_mode() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        let out = std::process::Command::new("defaults")
+            .args(["read", "-g", "AppleInterfaceStyle"])
+            .output();
+        return match out {
+            Ok(o) => String::from_utf8_lossy(&o.stdout).trim().eq_ignore_ascii_case("Dark"),
+            Err(_) => false,
+        };
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        false
     }
 }
 
