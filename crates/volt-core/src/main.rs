@@ -114,7 +114,16 @@ struct ChildHandles {
 
 fn spawn_js_runtime(manifest: &Manifest, proxy: EventLoopProxy<HostEvent>) -> Result<ChildHandles> {
     let runtime = pick_runtime(manifest.runtime.as_deref())?;
-    let mut child = Command::new(&runtime)
+    let entry_is_ts = std::path::Path::new(&manifest.entry)
+        .extension()
+        .map(|e| e == "ts" || e == "tsx" || e == "mts")
+        .unwrap_or(false);
+    let mut cmd = Command::new(&runtime);
+    if runtime.ends_with("node") && entry_is_ts {
+        cmd.arg("--experimental-strip-types")
+            .arg("--disable-warning=ExperimentalWarning");
+    }
+    let mut child = cmd
         .arg(&manifest.entry)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -259,10 +268,12 @@ fn handle_command(
         JsCommand::LoadUrl { window_id, url, reply_id } => {
             let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
             slot.webview.load_url(&url)?;
-            state.tx_to_js.send(JsEvent::Reply {
-                reply_id,
-                value: serde_json::Value::Null,
-            })?;
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::LoadHtml { window_id, html, reply_id } => {
+            let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
+            slot.webview.load_html(&html)?;
+            ack(&state.tx_to_js, reply_id)?;
         }
         JsCommand::CloseWindow { window_id, reply_id } => {
             state.windows.remove(&window_id);

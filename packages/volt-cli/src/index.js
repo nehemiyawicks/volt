@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { fileURLToPath } from "node:url";
-import { dirname, resolve, join } from "node:path";
-import { readdirSync, statSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { dirname, resolve, join, relative } from "node:path";
+import { readdirSync, statSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, existsSync, symlinkSync, lstatSync, unlinkSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -50,14 +50,42 @@ async function init(args) {
 }
 
 async function dev() {
-  const manifestPath = resolve(process.cwd(), "volt.manifest.json");
+  const cwd = process.cwd();
+  const manifestPath = resolve(cwd, "volt.manifest.json");
   if (!existsSync(manifestPath)) throw new Error("no volt.manifest.json in this directory");
+  ensureElectronAlias(cwd);
   const core = findCore();
   const child = spawn(core, [], {
     stdio: "inherit",
     env: { ...process.env, VOLT_MANIFEST: manifestPath },
   });
   child.on("exit", (code) => process.exit(code ?? 0));
+}
+
+function ensureElectronAlias(cwd) {
+  const target = findCompatDir(cwd);
+  if (!target) return;
+  const nm = resolve(cwd, "node_modules");
+  if (!existsSync(nm)) mkdirSync(nm, { recursive: true });
+  const link = join(nm, "electron");
+  try {
+    const st = lstatSync(link);
+    if (st.isSymbolicLink() || st.isDirectory() || st.isFile()) unlinkSync(link);
+  } catch {}
+  const rel = relative(nm, target);
+  symlinkSync(rel, link, "dir");
+}
+
+function findCompatDir(cwd) {
+  let dir = cwd;
+  for (let i = 0; i < 8; i++) {
+    const candidate = resolve(dir, "node_modules", "@volt", "electron-compat");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
 }
 
 async function build() {

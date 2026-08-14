@@ -52,12 +52,25 @@ export class BrowserWindow extends EventEmitter {
 
   async loadURL(url: string): Promise<void> {
     const id = await this.idPromise;
+    const dataHtml = "data:text/html,";
+    if (url.startsWith(dataHtml)) {
+      const html = decodeURIComponent(url.slice(dataHtml.length));
+      await host().request("window.loadHtml", { window_id: id, html });
+      return;
+    }
     await host().request("window.loadUrl", { window_id: id, url });
   }
 
   async loadFile(filePath: string): Promise<void> {
     const path = await import("node:path");
-    await this.loadURL("file://" + path.resolve(filePath));
+    await host().request("window.loadUrl", {
+      window_id: await this.idPromise,
+      url: "file://" + path.resolve(filePath),
+    });
+  }
+
+  async loadHTML(html: string): Promise<void> {
+    await host().request("window.loadHtml", { window_id: await this.idPromise, html });
   }
 
   async close(): Promise<void> {

@@ -9,6 +9,8 @@ pub enum Command {
     CreateWindow { options: WindowOptions, reply_id: String },
     #[serde(rename = "window.loadUrl")]
     LoadUrl { window_id: u64, url: String, reply_id: String },
+    #[serde(rename = "window.loadHtml")]
+    LoadHtml { window_id: u64, html: String, reply_id: String },
     #[serde(rename = "window.close")]
     CloseWindow { window_id: u64, reply_id: String },
     #[serde(rename = "window.show")]

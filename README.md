@@ -39,19 +39,7 @@ Both JavaScript and TypeScript projects follow the same shape.
 npm install @volt/electron-compat @volt/cli
 ```
 
-**2. Alias `electron`**
-
-For JS, in `package.json`:
-
-```json
-{
-  "imports": {
-    "electron": "@volt/electron-compat"
-  }
-}
-```
-
-For TS, in `tsconfig.json`:
+**2. Add a `tsconfig.json` path (TS only, for type resolution)**
 
 ```json
 {
@@ -62,6 +50,8 @@ For TS, in `tsconfig.json`:
   }
 }
 ```
+
+JavaScript projects don't need this step. `volt dev` symlinks `node_modules/electron` to `@volt/electron-compat` before spawning your app, so bare `import ... from 'electron'` resolves at runtime in both languages.
 
 **3. Run**
 
