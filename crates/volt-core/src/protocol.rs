@@ -230,6 +230,10 @@ pub enum Event {
     WindowFocus { id: u64 },
     #[serde(rename = "window.blur")]
     WindowBlur { id: u64 },
+    #[serde(rename = "webContents.didStartLoading")]
+    DidStartLoading { window_id: u64 },
+    #[serde(rename = "webContents.didFinishLoad")]
+    DidFinishLoad { window_id: u64 },
     #[serde(rename = "app.allWindowsClosed")]
     AllWindowsClosed,
     #[serde(rename = "reply")]

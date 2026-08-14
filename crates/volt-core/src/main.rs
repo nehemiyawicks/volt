@@ -44,6 +44,7 @@ enum HostEvent {
     MenuClick(String),
     HotkeyPressed(u32),
     TrayClicked(String),
+    PageLoad { window_id: u64, finished: bool },
     ChildExited,
 }
 
@@ -129,6 +130,14 @@ fn main() -> Result<()> {
             }
             Event::UserEvent(HostEvent::TrayClicked(id)) => {
                 let _ = state.tx_to_js.send(JsEvent::TrayClick { id });
+            }
+            Event::UserEvent(HostEvent::PageLoad { window_id, finished }) => {
+                let ev = if finished {
+                    JsEvent::DidFinishLoad { window_id }
+                } else {
+                    JsEvent::DidStartLoading { window_id }
+                };
+                let _ = state.tx_to_js.send(ev);
             }
             Event::Reopen { has_visible_windows, .. } => {
                 let _ = state.tx_to_js.send(JsEvent::AppActivate { has_visible_windows });
@@ -323,6 +332,7 @@ fn handle_command(
             let tao_id = window.id();
 
             let ipc_proxy = proxy.clone();
+            let load_proxy = proxy.clone();
             let mut wv = WebViewBuilder::new(&window)
                 .with_devtools(true)
                 .with_initialization_script(preload::PRELOAD_JS)
@@ -332,6 +342,10 @@ fn handle_command(
                         window_id: id,
                         raw: body,
                     });
+                })
+                .with_on_page_load_handler(move |ev, _url| {
+                    let finished = matches!(ev, wry::PageLoadEvent::Finished);
+                    let _ = load_proxy.send_event(HostEvent::PageLoad { window_id: id, finished });
                 });
             if let Some(wp) = options.web_preferences.as_ref() {
                 if let Some(path) = wp.preload.as_deref() {

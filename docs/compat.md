@@ -30,6 +30,9 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `BrowserWindow.setAlwaysOnTop` | works | |
 | `BrowserWindow.on('closed')` | works | |
 | `BrowserWindow.on('focus')` / `on('blur')` | works | fires on native focus change |
+| `BrowserWindow.on('ready-to-show')` | works | fires once when the first page finishes loading |
+| `webContents.on('did-start-loading')` | works | wry PageLoadEvent::Started |
+| `webContents.on('did-finish-load')` | works | wry PageLoadEvent::Finished |
 | `BrowserWindow.getAllWindows()` | works | JS-side registry of live windows |
 | `BrowserWindow.fromId(id)` | works | |
 | `BrowserWindow.getFocusedWindow()` | works | tracked via focus/blur events |
