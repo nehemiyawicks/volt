@@ -72,6 +72,20 @@ pub enum Command {
     GlobalShortcutUnregisterAll { reply_id: String },
     #[serde(rename = "app.beforeQuit")]
     AppBeforeQuit { reply_id: String },
+    #[serde(rename = "tray.create")]
+    TrayCreate {
+        id: String,
+        icon_path: Option<String>,
+        tooltip: Option<String>,
+        menu: Vec<MenuItemSpec>,
+        reply_id: String,
+    },
+    #[serde(rename = "tray.setToolTip")]
+    TraySetToolTip { id: String, tooltip: String, reply_id: String },
+    #[serde(rename = "tray.setContextMenu")]
+    TraySetContextMenu { id: String, menu: Vec<MenuItemSpec>, reply_id: String },
+    #[serde(rename = "tray.destroy")]
+    TrayDestroy { id: String, reply_id: String },
     #[serde(rename = "webContents.executeJavaScript")]
     ExecuteJavaScript { window_id: u64, code: String, reply_id: String },
     #[serde(rename = "webContents.openDevTools")]
@@ -231,4 +245,6 @@ pub enum Event {
     MenuClick { id: String },
     #[serde(rename = "globalShortcut.click")]
     GlobalShortcutClick { id: String },
+    #[serde(rename = "tray.click")]
+    TrayClick { id: String },
 }

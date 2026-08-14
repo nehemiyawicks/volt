@@ -21,3 +21,4 @@ notify-rust = "4"
 muda = "0.15"
 arboard = { version = "3", default-features = false }
 global-hotkey = "0.6"
+tray-icon = "0.19"

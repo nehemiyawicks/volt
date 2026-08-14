@@ -16,6 +16,10 @@ pub fn build_menu(template: &[MenuItemSpec]) -> Result<Menu> {
     Ok(menu)
 }
 
+pub fn build_submenu_as_menu(template: &[MenuItemSpec]) -> Result<Menu> {
+    build_menu(template)
+}
+
 fn attach(parent: &Menu, spec: &MenuItemSpec) -> Result<()> {
     if !spec.submenu.is_empty() {
         let sub = Submenu::new(spec.label.as_deref().unwrap_or(""), spec.enabled.unwrap_or(true));

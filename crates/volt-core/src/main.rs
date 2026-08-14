@@ -17,6 +17,7 @@ use wry::{WebView, WebViewBuilder};
 mod menu;
 mod preload;
 mod protocol;
+mod tray;
 use protocol::{Command as JsCommand, Event as JsEvent};
 
 struct AppState {
@@ -26,6 +27,7 @@ struct AppState {
     app_menu: Option<muda::Menu>,
     hotkeys: HashMap<String, global_hotkey::hotkey::HotKey>,
     hotkey_manager: Option<global_hotkey::GlobalHotKeyManager>,
+    trays: HashMap<String, tray_icon::TrayIcon>,
 }
 
 struct WindowSlot {
@@ -41,6 +43,7 @@ enum HostEvent {
     IpcFromRenderer { window_id: u64, raw: String },
     MenuClick(String),
     HotkeyPressed(u32),
+    TrayClicked(String),
     ChildExited,
 }
 
@@ -71,6 +74,7 @@ fn main() -> Result<()> {
         app_menu: None,
         hotkeys: HashMap::new(),
         hotkey_manager,
+        trays: HashMap::new(),
     };
     let _ = state.tx_to_js.send(JsEvent::Ready);
 
@@ -86,6 +90,19 @@ fn main() -> Result<()> {
     global_hotkey::GlobalHotKeyEvent::set_event_handler(Some(move |ev: global_hotkey::GlobalHotKeyEvent| {
         if ev.state == global_hotkey::HotKeyState::Pressed {
             let _ = hotkey_proxy.send_event(HostEvent::HotkeyPressed(ev.id));
+        }
+    }));
+
+    let tray_proxy = proxy.clone();
+    tray_icon::TrayIconEvent::set_event_handler(Some(move |ev: tray_icon::TrayIconEvent| {
+        if matches!(ev, tray_icon::TrayIconEvent::Click { .. }) {
+            let id = match &ev {
+                tray_icon::TrayIconEvent::Click { id, .. } => id.0.clone(),
+                _ => String::new(),
+            };
+            if !id.is_empty() {
+                let _ = tray_proxy.send_event(HostEvent::TrayClicked(id));
+            }
         }
     }));
 
@@ -109,6 +126,9 @@ fn main() -> Result<()> {
                 if let Some((sid, _)) = state.hotkeys.iter().find(|(_, k)| k.id() == id) {
                     let _ = state.tx_to_js.send(JsEvent::GlobalShortcutClick { id: sid.clone() });
                 }
+            }
+            Event::UserEvent(HostEvent::TrayClicked(id)) => {
+                let _ = state.tx_to_js.send(JsEvent::TrayClick { id });
             }
             Event::UserEvent(HostEvent::ChildExited) => *control_flow = ControlFlow::Exit,
             Event::WindowEvent { event, window_id, .. } => {
@@ -511,6 +531,28 @@ fn handle_command(
             ack(&state.tx_to_js, reply_id)?;
         }
         JsCommand::AppBeforeQuit { reply_id } => {
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::TrayCreate { id, icon_path, tooltip, menu, reply_id } => {
+            let t = tray::create(&id, icon_path.as_deref(), tooltip.as_deref(), &menu)?;
+            state.trays.insert(id, t);
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::TraySetToolTip { id, tooltip, reply_id } => {
+            if let Some(t) = state.trays.get(&id) {
+                let _ = t.set_tooltip(Some(tooltip));
+            }
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::TraySetContextMenu { id, menu, reply_id } => {
+            if let Some(t) = state.trays.get(&id) {
+                let m = crate::menu::build_menu(&menu)?;
+                t.set_menu(Some(Box::new(m)));
+            }
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::TrayDestroy { id, reply_id } => {
+            state.trays.remove(&id);
             ack(&state.tx_to_js, reply_id)?;
         }
         JsCommand::NotificationShow { options, reply_id } => {

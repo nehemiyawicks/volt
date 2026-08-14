@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, Notification, shell } from "electron";
+import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, Notification, shell, Tray } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -145,4 +145,13 @@ app.whenReady().then(async () => {
   await globalShortcut.register("CmdOrCtrl+Shift+V", () => {
     new Notification({ title: "Volt", body: "Global shortcut fired." }).show();
   });
+
+  const tray = new Tray();
+  await tray.setToolTip("Volt quick-start");
+  await tray.setContextMenu([
+    { label: "Show notification", click: () => new Notification({ title: "Tray", body: "Clicked from tray." }).show() },
+    { type: "separator" },
+    { role: "quit" },
+  ]);
+  tray.on("click", () => new Notification({ title: "Tray", body: "Tray icon clicked." }).show());
 });

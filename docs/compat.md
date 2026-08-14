@@ -55,7 +55,11 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `clipboard.readText` / `writeText` | works | via `arboard` |
 | `globalShortcut.register` / `unregister` / `unregisterAll` / `isRegistered` | works | via `global-hotkey`; same accelerator syntax as Electron |
 | `app.on('before-quit')` / `on('will-quit')` | partial | fires on `app.quit()` and `app.exit()`; not cancelable via `event.preventDefault()` yet |
-| `Tray` | missing | v0.2 |
+| `Tray` constructor | works | falls back to a plain grey 16x16 default when no icon path is given |
+| `Tray.setToolTip` | works | |
+| `Tray.setContextMenu` | works | reuses the `Menu` template shape |
+| `Tray.destroy` / `isDestroyed` | works | |
+| `Tray` `click` event | works | fires on left click |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |
 | `contextBridge.exposeInMainWorld` | works | via `webPreferences.preload`; runs in main world (no isolated world yet) |

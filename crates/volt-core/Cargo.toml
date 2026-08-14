@@ -23,3 +23,5 @@ notify-rust = { workspace = true }
 muda = { workspace = true }
 arboard = { workspace = true }
 global-hotkey = { workspace = true }
+tray-icon = { workspace = true }
+image = { version = "0.25", default-features = false, features = ["png"] }
