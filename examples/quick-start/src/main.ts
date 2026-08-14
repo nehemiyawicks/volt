@@ -100,7 +100,16 @@ app.whenReady().then(async () => {
   `));
 
   let n = 0;
-  setInterval(() => win.webContents.send("tick", ++n), 1000);
+  let ticker: ReturnType<typeof setInterval> | null = setInterval(
+    () => win.webContents.send("tick", ++n),
+    1000,
+  );
+  win.on("blur", () => {
+    if (ticker) { clearInterval(ticker); ticker = null; }
+  });
+  win.on("focus", () => {
+    if (!ticker) ticker = setInterval(() => win.webContents.send("tick", ++n), 1000);
+  });
 });
 
 app.on("window-all-closed", () => app.quit());

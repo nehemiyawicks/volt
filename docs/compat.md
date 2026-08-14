@@ -14,7 +14,11 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `app.quit()` | works | |
 | `app.getName()` | works | reads `VOLT_APP_NAME` env or falls back |
 | `app.getVersion()` | works | reads `VOLT_APP_VERSION` env or falls back |
-| `app.getPath()` | partial | `home`, `temp`, `downloads`, `userData` only |
+| `app.getPath()` | works | `home`, `appData`, `userData`, `sessionData`, `temp`, `exe`, `module`, `desktop`, `documents`, `downloads`, `music`, `pictures`, `videos`, `recent`, `logs`, `crashDumps` |
+| `app.getAppPath()` | works | returns `process.cwd()` |
+| `app.getLocale()` | partial | parsed from `$LANG`; no CFLocale integration yet |
+| `app.setName()` | works | sets `VOLT_APP_NAME` for subsequent `getName`/`getPath` calls |
+| `app.exit()` | works | |
 | `BrowserWindow` constructor | works | `title`, `width`, `height`, `x`, `y`, `resizable`, `minimizable`, `maximizable`, `alwaysOnTop`, `frame`, `transparent`, `show`, `webPreferences` |
 | `BrowserWindow.loadURL()` | works | |
 | `BrowserWindow.loadFile()` | works | resolves to `file://` URL |
@@ -24,12 +28,14 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `BrowserWindow.setTitle` | works | |
 | `BrowserWindow.setBounds/getBounds` | works | logical coordinates |
 | `BrowserWindow.setAlwaysOnTop` | works | |
+| `BrowserWindow.on('closed')` | works | |
+| `BrowserWindow.on('focus')` / `on('blur')` | works | fires on native focus change |
 | `webContents.openDevTools()` | stub | v0.2 |
 | `webContents.send()` | works | fires `window.volt.on(channel, cb)` in the renderer |
 | `ipcMain.handle()` | works | invocations from renderer via `window.volt.invoke` |
 | `ipcMain.handleOnce()` | works | |
 | `ipcMain.removeHandler()` | works | |
-| `dialog.showMessageBox()` | partial | native picker; buttons not respected yet |
+| `dialog.showMessageBox()` | works | up to 3 custom buttons; returns the clicked index; supports `type: info/warning/error` |
 | `dialog.showOpenDialog()` | works | files, folders, multi-select, filters |
 | `dialog.showSaveDialog()` | works | filters, default path |
 | `shell.openExternal()` | works | uses `open` (macOS), `start` (Windows), `xdg-open` (Linux) |
@@ -38,7 +44,7 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `Menu.buildFromTemplate` | works | roles, submenus, accelerators (CmdOrCtrl+N syntax), click handlers |
 | `Menu.setApplicationMenu` | works | macOS app menu; per-window on Windows/Linux |
 | `MenuItem` | partial | id, label, role, accelerator, enabled, submenu, click; no checkbox/radio state yet |
-| `MenuItem` accelerators | partial | **known issue**: a custom accelerator that clashes with a `role` shortcut in the same menu (e.g. custom `CmdOrCtrl+H` alongside `role: "hide"`) throws an NSException on macOS and crashes the host. Use non-conflicting keys until we intercept the accelerator conflict in muda. |
+| `MenuItem` accelerator collision detection | works | `Menu.buildFromTemplate` throws a JS error if a custom accelerator clashes with a role's system shortcut (prevents the macOS NSException crash) |
 | `Tray` | missing | v0.2 |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |

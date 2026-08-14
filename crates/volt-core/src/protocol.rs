@@ -135,15 +135,18 @@ pub struct WebPreferences {
     pub node_integration: Option<bool>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageBoxOptions {
     pub message: String,
+    #[serde(default)]
     pub title: Option<String>,
+    #[serde(default)]
     pub buttons: Option<Vec<String>>,
     #[serde(default)]
     pub detail: Option<String>,
+    #[serde(default, rename = "type")]
+    pub kind: Option<String>,
 }
 
 #[allow(dead_code)]
@@ -189,6 +192,10 @@ pub enum Event {
     Ready,
     #[serde(rename = "window.closed")]
     WindowClosed { id: u64 },
+    #[serde(rename = "window.focus")]
+    WindowFocus { id: u64 },
+    #[serde(rename = "window.blur")]
+    WindowBlur { id: u64 },
     #[serde(rename = "app.allWindowsClosed")]
     AllWindowsClosed,
     #[serde(rename = "reply")]

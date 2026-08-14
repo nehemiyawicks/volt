@@ -43,8 +43,15 @@ export class BrowserWindow extends EventEmitter {
       .then((r) => {
         (this as any).id = r.id;
         (this.webContents as any)._setId(r.id);
-        host().on("window.closed", (closedId: number) => {
+        const h = host();
+        h.on("window.closed", (closedId: number) => {
           if (closedId === r.id) this.emit("closed");
+        });
+        h.on("window.focus", (id: number) => {
+          if (id === r.id) this.emit("focus");
+        });
+        h.on("window.blur", (id: number) => {
+          if (id === r.id) this.emit("blur");
         });
         return r.id;
       });

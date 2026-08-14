@@ -47,6 +47,12 @@ class Host extends EventEmitter {
       case "window.closed":
         this.emit("window.closed", msg.id);
         return;
+      case "window.focus":
+        this.emit("window.focus", msg.id);
+        return;
+      case "window.blur":
+        this.emit("window.blur", msg.id);
+        return;
       case "app.allWindowsClosed":
         this.emit("app.allWindowsClosed");
         return;

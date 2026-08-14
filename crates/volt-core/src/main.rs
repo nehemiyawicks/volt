@@ -93,22 +93,28 @@ fn main() -> Result<()> {
                 let _ = state.tx_to_js.send(JsEvent::MenuClick { id });
             }
             Event::UserEvent(HostEvent::ChildExited) => *control_flow = ControlFlow::Exit,
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                window_id,
-                ..
-            } => {
+            Event::WindowEvent { event, window_id, .. } => {
                 let key = state
                     .windows
                     .iter()
                     .find(|(_, s)| s.tao_id == window_id)
                     .map(|(k, _)| *k);
-                if let Some(k) = key {
-                    state.windows.remove(&k);
-                    let _ = state.tx_to_js.send(JsEvent::WindowClosed { id: k });
-                }
-                if state.windows.is_empty() {
-                    let _ = state.tx_to_js.send(JsEvent::AllWindowsClosed);
+                let Some(k) = key else { return };
+                match event {
+                    WindowEvent::CloseRequested => {
+                        state.windows.remove(&k);
+                        let _ = state.tx_to_js.send(JsEvent::WindowClosed { id: k });
+                        if state.windows.is_empty() {
+                            let _ = state.tx_to_js.send(JsEvent::AllWindowsClosed);
+                        }
+                    }
+                    WindowEvent::Focused(true) => {
+                        let _ = state.tx_to_js.send(JsEvent::WindowFocus { id: k });
+                    }
+                    WindowEvent::Focused(false) => {
+                        let _ = state.tx_to_js.send(JsEvent::WindowBlur { id: k });
+                    }
+                    _ => {}
                 }
             }
             _ => {}
@@ -483,14 +489,45 @@ fn handle_ipc_from_renderer(window_id: u64, raw: String, state: &AppState) -> Re
 }
 
 fn native_message_box(opts: &protocol::MessageBoxOptions) -> u32 {
-    let mut dlg = rfd::MessageDialog::new()
+    use rfd::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
+    let mut dlg = MessageDialog::new()
         .set_title(opts.title.as_deref().unwrap_or("Volt"))
-        .set_description(&opts.message);
-    if let Some(detail) = &opts.detail {
-        dlg = dlg.set_description(&format!("{}\n\n{}", opts.message, detail));
+        .set_description(match &opts.detail {
+            Some(d) => format!("{}\n\n{}", opts.message, d),
+            None => opts.message.clone(),
+        });
+    dlg = dlg.set_level(match opts.kind.as_deref() {
+        Some("error") => MessageLevel::Error,
+        Some("warning") => MessageLevel::Warning,
+        _ => MessageLevel::Info,
+    });
+
+    let buttons = opts.buttons.clone().unwrap_or_default();
+    let ordered = &buttons[..];
+    let btn_config = match ordered.len() {
+        0 => MessageButtons::Ok,
+        1 => MessageButtons::OkCustom(ordered[0].clone()),
+        2 => MessageButtons::OkCancelCustom(ordered[0].clone(), ordered[1].clone()),
+        _ => MessageButtons::YesNoCancelCustom(
+            ordered[0].clone(),
+            ordered[1].clone(),
+            ordered[2].clone(),
+        ),
+    };
+    dlg = dlg.set_buttons(btn_config);
+
+    match (ordered.len(), dlg.show()) {
+        (0, _) => 0,
+        (1, MessageDialogResult::Custom(_)) => 0,
+        (2, MessageDialogResult::Custom(ref s)) if s == &ordered[0] => 0,
+        (2, MessageDialogResult::Custom(_)) => 1,
+        (_, MessageDialogResult::Custom(ref s)) => ordered
+            .iter()
+            .position(|b| b == s)
+            .map(|i| i as u32)
+            .unwrap_or(0),
+        _ => 0,
     }
-    let _ = dlg.show();
-    0
 }
 
 fn open_dialog(opts: protocol::OpenDialogOptions) -> serde_json::Value {
