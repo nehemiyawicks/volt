@@ -35,7 +35,9 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `BrowserWindow.getFocusedWindow()` | works | tracked via focus/blur events |
 | `webContents.executeJavaScript(code)` | works | returns the evaluated value; complex objects serialised as JSON |
 | `webContents.reload()` | works | delegates to `location.reload()` |
-| `webContents.openDevTools()` | stub | v0.2 |
+| `webContents.openDevTools()` | works | native WebKit inspector |
+| `webContents.closeDevTools()` | works | |
+| `webContents.toggleDevTools()` | works | |
 | `webContents.send()` | works | fires `window.volt.on(channel, cb)` in the renderer |
 | `ipcMain.handle()` | works | invocations from renderer via `window.volt.invoke` |
 | `ipcMain.handleOnce()` | works | |

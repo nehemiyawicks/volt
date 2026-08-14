@@ -256,6 +256,7 @@ fn handle_command(
 
             let ipc_proxy = proxy.clone();
             let mut wv = WebViewBuilder::new(&window)
+                .with_devtools(true)
                 .with_initialization_script(preload::PRELOAD_JS)
                 .with_ipc_handler(move |req| {
                     let body = req.body().to_string();
@@ -427,6 +428,25 @@ fn handle_command(
             state.app_menu = Some(m);
             ack(&state.tx_to_js, reply_id)?;
         }
+        JsCommand::OpenDevTools { window_id, reply_id } => {
+            let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
+            slot.webview.open_devtools();
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::CloseDevTools { window_id, reply_id } => {
+            let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
+            slot.webview.close_devtools();
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::ToggleDevTools { window_id, reply_id } => {
+            let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
+            if slot.webview.is_devtools_open() {
+                slot.webview.close_devtools();
+            } else {
+                slot.webview.open_devtools();
+            }
+            ack(&state.tx_to_js, reply_id)?;
+        }
         JsCommand::ExecuteJavaScript { window_id, code, reply_id } => {
             let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
             let tx = state.tx_to_js.clone();
@@ -442,14 +462,7 @@ fn handle_command(
                 })?;
         }
         JsCommand::NotificationShow { options, reply_id } => {
-            std::thread::spawn(move || {
-                let mut n = notify_rust::Notification::new();
-                n.summary(&options.title);
-                if let Some(b) = &options.body { n.body(b); }
-                #[cfg(target_os = "macos")]
-                if let Some(s) = &options.subtitle { n.subtitle(s); }
-                let _ = n.show();
-            });
+            std::thread::spawn(move || show_notification(options));
             ack(&state.tx_to_js, reply_id)?;
         }
     }
@@ -605,4 +618,33 @@ fn save_dialog(opts: protocol::SaveDialogOptions) -> serde_json::Value {
         Some(p) => serde_json::json!({ "canceled": false, "filePath": p.to_string_lossy() }),
         None => serde_json::json!({ "canceled": true }),
     }
+}
+
+fn show_notification(options: protocol::NotificationOptions) {
+    #[cfg(target_os = "macos")]
+    {
+        let title = applescript_str(&options.title);
+        let body = applescript_str(options.body.as_deref().unwrap_or(""));
+        let subtitle = options
+            .subtitle
+            .as_deref()
+            .map(|s| format!(" subtitle {}", applescript_str(s)))
+            .unwrap_or_default();
+        let script = format!("display notification {body} with title {title}{subtitle}");
+        let _ = Command::new("osascript").args(["-e", &script]).status();
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let mut n = notify_rust::Notification::new();
+        n.summary(&options.title);
+        if let Some(b) = &options.body {
+            n.body(b);
+        }
+        let _ = n.show();
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn applescript_str(s: &str) -> String {
+    format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""))
 }

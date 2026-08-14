@@ -68,6 +68,21 @@ app.whenReady().then(async () => {
         { role: "selectAll" },
       ],
     },
+    {
+      label: "View",
+      submenu: [
+        {
+          label: "Toggle DevTools",
+          accelerator: "CmdOrCtrl+Alt+I",
+          click: () => win.webContents.toggleDevTools(),
+        },
+        {
+          label: "Reload",
+          accelerator: "CmdOrCtrl+R",
+          click: () => win.webContents.reload(),
+        },
+      ],
+    },
   ]));
 
   await win.loadURL("data:text/html," + encodeURIComponent(`

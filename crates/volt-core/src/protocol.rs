@@ -62,6 +62,12 @@ pub enum Command {
     SetApplicationMenu { template: Vec<MenuItemSpec>, reply_id: String },
     #[serde(rename = "webContents.executeJavaScript")]
     ExecuteJavaScript { window_id: u64, code: String, reply_id: String },
+    #[serde(rename = "webContents.openDevTools")]
+    OpenDevTools { window_id: u64, reply_id: String },
+    #[serde(rename = "webContents.closeDevTools")]
+    CloseDevTools { window_id: u64, reply_id: String },
+    #[serde(rename = "webContents.toggleDevTools")]
+    ToggleDevTools { window_id: u64, reply_id: String },
 }
 
 #[derive(Debug, Deserialize)]
