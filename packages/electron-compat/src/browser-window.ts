@@ -209,6 +209,15 @@ export class WebContents extends EventEmitter {
     return r.value;
   }
 
+  async getURL(): Promise<string> {
+    const r = await this.executeJavaScript("location.href");
+    return String(r ?? "");
+  }
+
+  getTitle(): string { return ""; }
+  isLoading(): boolean { return false; }
+  isDestroyed(): boolean { return false; }
+
   async reload(): Promise<void> {
     await this.executeJavaScript("location.reload()");
   }

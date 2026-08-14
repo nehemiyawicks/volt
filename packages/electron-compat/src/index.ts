@@ -24,3 +24,4 @@ export { Tray } from "./tray.js";
 export { screen } from "./screen.js";
 export type { Display } from "./screen.js";
 export { nativeTheme } from "./native-theme.js";
+export { nativeImage, NativeImage } from "./native-image.js";
