@@ -17,3 +17,4 @@ tao = "0.30"
 wry = "0.45"
 anyhow = "1"
 rfd = { version = "0.14", default-features = false, features = ["xdg-portal", "tokio"] }
+notify-rust = "4"

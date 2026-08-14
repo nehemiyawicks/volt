@@ -20,17 +20,18 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `BrowserWindow.loadFile()` | works | resolves to `file://` URL |
 | `BrowserWindow.close()` | works | |
 | `webContents.openDevTools()` | stub | v0.2 |
-| `webContents.send()` | stub | v0.2 (needs main-to-renderer channel) |
+| `webContents.send()` | works | fires `window.volt.on(channel, cb)` in the renderer |
 | `ipcMain.handle()` | works | invocations from renderer via `window.volt.invoke` |
 | `ipcMain.handleOnce()` | works | |
 | `ipcMain.removeHandler()` | works | |
 | `dialog.showMessageBox()` | partial | native picker; buttons not respected yet |
 | `dialog.showOpenDialog()` | works | files, folders, multi-select, filters |
 | `dialog.showSaveDialog()` | works | filters, default path |
+| `shell.openExternal()` | works | uses `open` (macOS), `start` (Windows), `xdg-open` (Linux) |
+| `Notification` | works | title, body, subtitle (macOS); no click events yet |
+| `Notification.isSupported()` | works | always true in v0.1 |
 | `Menu` | missing | v0.2 |
 | `Tray` | missing | v0.2 |
-| `Notification` | missing | v0.2 |
-| `shell.openExternal()` | missing | v0.2 |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |
 | `contextBridge` | missing | needs preload runtime; v0.2 |

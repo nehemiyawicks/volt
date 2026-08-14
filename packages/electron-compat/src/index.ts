@@ -13,3 +13,6 @@ export type {
   SaveDialogOptions,
   SaveDialogReturnValue,
 } from "./dialog.js";
+export { shell } from "./shell.js";
+export { Notification } from "./notification.js";
+export type { NotificationConstructorOptions } from "./notification.js";

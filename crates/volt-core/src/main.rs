@@ -270,6 +270,41 @@ fn handle_command(
             );
             slot.webview.evaluate_script(&script)?;
         }
+        JsCommand::WebContentsSend { window_id, channel, args } => {
+            let slot = state.windows.get(&window_id).ok_or_else(|| anyhow!("no window {window_id}"))?;
+            let script = format!(
+                "window.__volt_receive({}, {})",
+                serde_json::to_string(&channel).unwrap(),
+                serde_json::to_string(&args).unwrap(),
+            );
+            slot.webview.evaluate_script(&script)?;
+        }
+        JsCommand::ShellOpenExternal { url, reply_id } => {
+            let opener = if cfg!(target_os = "macos") { "open" }
+                else if cfg!(target_os = "windows") { "cmd" }
+                else { "xdg-open" };
+            let status = if cfg!(target_os = "windows") {
+                Command::new(opener).args(["/C", "start", "", &url]).status()
+            } else {
+                Command::new(opener).arg(&url).status()
+            };
+            state.tx_to_js.send(JsEvent::Reply {
+                reply_id,
+                value: serde_json::json!({ "ok": status.map(|s| s.success()).unwrap_or(false) }),
+            })?;
+        }
+        JsCommand::NotificationShow { options, reply_id } => {
+            let mut n = notify_rust::Notification::new();
+            n.summary(&options.title);
+            if let Some(b) = &options.body { n.body(b); }
+            #[cfg(target_os = "macos")]
+            if let Some(s) = &options.subtitle { n.subtitle(s); }
+            let _ = n.show();
+            state.tx_to_js.send(JsEvent::Reply {
+                reply_id,
+                value: serde_json::Value::Null,
+            })?;
+        }
     }
     Ok(())
 }

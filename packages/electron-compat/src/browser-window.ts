@@ -25,6 +25,7 @@ export class BrowserWindow extends EventEmitter {
       .request<{ id: number }>("window.create", { options })
       .then((r) => {
         (this as any).id = r.id;
+        (this.webContents as any)._setId(r.id);
         host().on("window.closed", (closedId: number) => {
           if (closedId === r.id) this.emit("closed");
         });
@@ -47,12 +48,31 @@ export class BrowserWindow extends EventEmitter {
     const id = await this.idPromise;
     await host().request("window.close", { window_id: id });
   }
+
+  _windowIdPromise(): Promise<number> {
+    return this.idPromise;
+  }
 }
 
 export class WebContents extends EventEmitter {
+  private windowId: number | null = null;
+
   constructor(private win: BrowserWindow) {
     super();
   }
+
+  _setId(id: number) {
+    this.windowId = id;
+  }
+
   openDevTools(): void {}
-  send(_channel: string, ..._args: unknown[]): void {}
+
+  send(channel: string, ...args: unknown[]): void {
+    const post = (id: number) => host().send("webContents.send", { window_id: id, channel, args });
+    if (this.windowId !== null) {
+      post(this.windowId);
+      return;
+    }
+    void this.win._windowIdPromise().then(post);
+  }
 }

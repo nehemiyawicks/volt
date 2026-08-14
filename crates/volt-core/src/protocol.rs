@@ -26,6 +26,29 @@ pub enum Command {
         value: serde_json::Value,
         error: Option<String>,
     },
+    #[serde(rename = "webContents.send")]
+    WebContentsSend {
+        window_id: u64,
+        channel: String,
+        args: Vec<serde_json::Value>,
+    },
+    #[serde(rename = "shell.openExternal")]
+    ShellOpenExternal { url: String, reply_id: String },
+    #[serde(rename = "notification.show")]
+    NotificationShow { options: NotificationOptions, reply_id: String },
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationOptions {
+    pub title: String,
+    #[serde(default)]
+    pub body: Option<String>,
+    #[serde(default)]
+    pub subtitle: Option<String>,
+    #[serde(default)]
+    pub silent: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
