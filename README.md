@@ -83,6 +83,8 @@ npm install
 cd examples/quick-start && npx volt dev
 ```
 
+Releases: pushing a tag `vX.Y.Z` triggers a GitHub Actions workflow that builds `volt-core` for macOS (arm64 + x86_64), Linux x86_64, and Windows x86_64, and attaches the binaries to a Release.
+
 ## Contributing
 
 Volt is early. The most valuable contributions right now:
