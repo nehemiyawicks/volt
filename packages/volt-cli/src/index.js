@@ -89,14 +89,114 @@ function findCompatDir(cwd) {
 }
 
 async function build() {
-  console.log("build: not implemented in v0.1; use `npx volt dev` for now");
+  const cwd = process.cwd();
+  const manifestPath = resolve(cwd, "volt.manifest.json");
+  if (!existsSync(manifestPath)) throw new Error("no volt.manifest.json in this directory");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const pkg = existsSync(resolve(cwd, "package.json"))
+    ? JSON.parse(readFileSync(resolve(cwd, "package.json"), "utf8"))
+    : {};
+
+  const appName = manifest.name || pkg.name || "Volt App";
+  const version = pkg.version || "0.0.0";
+  const bundleId = manifest.bundleId || `dev.volt.${appName.toLowerCase().replace(/[^a-z0-9]+/g, "")}`;
+  const distDir = resolve(cwd, "dist");
+  const appDir = join(distDir, `${appName}.app`);
+  const contents = join(appDir, "Contents");
+  const macosDir = join(contents, "MacOS");
+  const resourcesDir = join(contents, "Resources");
+
+  if (existsSync(appDir)) rmrfDir(appDir);
+  mkdirSync(macosDir, { recursive: true });
+  mkdirSync(resourcesDir, { recursive: true });
+
+  const core = findCore();
+  copyFileSync(core, join(macosDir, appName));
+  spawnSync("chmod", ["+x", join(macosDir, appName)]);
+
+  copyFileSync(manifestPath, join(resourcesDir, "volt.manifest.json"));
+
+  const entryAbs = resolve(cwd, manifest.entry);
+  const entryRel = relative(cwd, entryAbs);
+  copyIntoResources(cwd, resourcesDir, entryRel);
+
+  const nm = resolve(cwd, "node_modules");
+  if (existsSync(nm)) copyDir(nm, join(resourcesDir, "node_modules"));
+
+  writeFileSync(
+    join(contents, "Info.plist"),
+    infoPlist({ appName, version, bundleId }),
+  );
+
+  console.log(`Built ${appDir}`);
+  console.log(`  open ${appDir}     # to launch`);
+}
+
+function copyIntoResources(root, resources, relPath) {
+  const src = resolve(root, relPath);
+  const dst = join(resources, relPath);
+  const st = statSync(src);
+  if (st.isDirectory()) {
+    copyDir(src, dst);
+  } else {
+    mkdirSync(dirname(dst), { recursive: true });
+    copyFileSync(src, dst);
+  }
+  const srcDir = dirname(src);
+  if (srcDir !== root) {
+    for (const sibling of readdirSync(srcDir)) {
+      const sibSrc = join(srcDir, sibling);
+      if (sibSrc === src) continue;
+      if (statSync(sibSrc).isFile()) {
+        const rel = relative(root, sibSrc);
+        const sibDst = join(resources, rel);
+        mkdirSync(dirname(sibDst), { recursive: true });
+        copyFileSync(sibSrc, sibDst);
+      }
+    }
+  }
+}
+
+function rmrfDir(dir) {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    const st = lstatSync(p);
+    if (st.isDirectory() && !st.isSymbolicLink()) rmrfDir(p);
+    else unlinkSync(p);
+  }
+  try { require("node:fs").rmdirSync(dir); } catch {}
+}
+
+function infoPlist({ appName, version, bundleId }) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>${appName}</string>
+  <key>CFBundleDisplayName</key><string>${appName}</string>
+  <key>CFBundleIdentifier</key><string>${bundleId}</string>
+  <key>CFBundleVersion</key><string>${version}</string>
+  <key>CFBundleShortVersionString</key><string>${version}</string>
+  <key>CFBundleExecutable</key><string>${appName}</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>LSMinimumSystemVersion</key><string>11.0</string>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>
+`;
 }
 
 function findCore() {
-  const local = resolve(process.cwd(), "..", "..", "target", "release", "volt-core");
-  if (existsSync(local)) return local;
-  const debug = resolve(process.cwd(), "..", "..", "target", "debug", "volt-core");
-  if (existsSync(debug)) return debug;
+  let dir = process.cwd();
+  for (let i = 0; i < 8; i++) {
+    for (const flavour of ["release", "debug"]) {
+      const p = resolve(dir, "target", flavour, "volt-core");
+      if (existsSync(p)) return p;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
   const which = spawnSync("which", ["volt-core"], { encoding: "utf8" });
   if (which.status === 0) return which.stdout.trim();
   throw new Error("volt-core binary not found; run `cargo build -p volt-core` at the repo root");

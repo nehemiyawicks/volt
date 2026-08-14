@@ -161,10 +161,37 @@ fn main() -> Result<()> {
 }
 
 fn load_manifest() -> Result<Manifest> {
-    let path = std::env::var("VOLT_MANIFEST").unwrap_or_else(|_| "volt.manifest.json".into());
-    let raw = std::fs::read_to_string(&path)
-        .with_context(|| format!("read manifest at {path}"))?;
+    if let Ok(path) = std::env::var("VOLT_MANIFEST") {
+        let raw = std::fs::read_to_string(&path).with_context(|| format!("read manifest at {path}"))?;
+        return Ok(serde_json::from_str(&raw)?);
+    }
+    if let Some(bundle_manifest) = bundle_manifest_path() {
+        let raw = std::fs::read_to_string(&bundle_manifest)
+            .with_context(|| format!("read bundle manifest at {}", bundle_manifest.display()))?;
+        if let Some(dir) = bundle_manifest.parent() {
+            std::env::set_current_dir(dir).ok();
+        }
+        return Ok(serde_json::from_str(&raw)?);
+    }
+    let raw = std::fs::read_to_string("volt.manifest.json")
+        .context("read manifest at volt.manifest.json")?;
     Ok(serde_json::from_str(&raw)?)
+}
+
+fn bundle_manifest_path() -> Option<std::path::PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let macos_dir = exe.parent()?;
+    if macos_dir.file_name()? != "MacOS" {
+        return None;
+    }
+    let contents = macos_dir.parent()?;
+    let resources = contents.join("Resources");
+    let candidate = resources.join("volt.manifest.json");
+    if candidate.is_file() {
+        Some(candidate)
+    } else {
+        None
+    }
 }
 
 struct ChildHandles {
