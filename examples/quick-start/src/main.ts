@@ -49,7 +49,7 @@ app.whenReady().then(async () => {
       submenu: [
         {
           label: "Say hi",
-          accelerator: "CmdOrCtrl+H",
+          accelerator: "CmdOrCtrl+J",
           click: () => new Notification({ title: "Volt", body: "menu click works" }).show(),
         },
         { type: "separator" },
@@ -75,7 +75,7 @@ app.whenReady().then(async () => {
     <html>
       <body style="font-family:system-ui;padding:2rem;line-height:1.6">
         <h1>Volt quick-start</h1>
-        <p>Try the <b>File</b> menu &rarr; <b>Say hi</b> (Cmd+H). Then the rest below.</p>
+        <p>Try the <b>File</b> menu &rarr; <b>Say hi</b> (Cmd+J). Then the rest below.</p>
         <p><button id="ping">Ping</button> <span id="pong"></span></p>
         <p><button id="pick">Pick a file</button> <code id="picked"></code></p>
         <p><button id="gh">Open GitHub</button></p>

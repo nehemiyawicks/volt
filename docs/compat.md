@@ -38,6 +38,7 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `Menu.buildFromTemplate` | works | roles, submenus, accelerators (CmdOrCtrl+N syntax), click handlers |
 | `Menu.setApplicationMenu` | works | macOS app menu; per-window on Windows/Linux |
 | `MenuItem` | partial | id, label, role, accelerator, enabled, submenu, click; no checkbox/radio state yet |
+| `MenuItem` accelerators | partial | **known issue**: a custom accelerator that clashes with a `role` shortcut in the same menu (e.g. custom `CmdOrCtrl+H` alongside `role: "hide"`) throws an NSException on macOS and crashes the host. Use non-conflicting keys until we intercept the accelerator conflict in muda. |
 | `Tray` | missing | v0.2 |
 | `session` | missing | v0.5 |
 | `protocol` | missing | v0.5 |
