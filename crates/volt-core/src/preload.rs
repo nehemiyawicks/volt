@@ -81,5 +81,26 @@ pub const PRELOAD_JS: &str = r#"
   };
   window.require = req;
   try { globalThis.require = req; } catch {}
+
+  const processShim = {
+    versions: {
+      electron: '30.0.0-volt',
+      chrome: '620',
+      node: '20.0.0',
+      v8: '12.0',
+      volt: '0.1.0',
+    },
+    platform: navigator.platform.toLowerCase().includes('mac') ? 'darwin'
+      : navigator.platform.toLowerCase().includes('win') ? 'win32'
+      : 'linux',
+    arch: navigator.userAgent.includes('ARM64') || navigator.userAgent.includes('Apple') ? 'arm64' : 'x64',
+    env: {},
+    argv: [],
+    type: 'renderer',
+    contextIsolated: false,
+    nextTick: (cb, ...args) => queueMicrotask(() => cb(...args)),
+  };
+  if (!window.process) window.process = processShim;
+  try { if (!globalThis.process) globalThis.process = processShim; } catch {}
 })();
 "#;

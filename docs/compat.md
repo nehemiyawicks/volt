@@ -66,6 +66,7 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `contextBridge.exposeInIsolatedWorld` | partial | falls through to `exposeInMainWorld` (no isolated world in v0.1) |
 | `webPreferences.preload` | works | file is read and injected as an initialization script after the volt shim |
 | `require('electron')` in preload | works | returns `ipcRenderer`, `contextBridge`, `webFrame`; other members throw |
+| `process` in preload | partial | `versions.{electron,chrome,node,v8,volt}`, `platform`, `arch`, `env`, `argv`, `nextTick`; other Node process members not exposed |
 
 ## Renderer process
 

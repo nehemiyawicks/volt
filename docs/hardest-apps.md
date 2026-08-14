@@ -8,7 +8,7 @@ Difficulty roughly ascending. A break on rung N is a hard blocker until the unde
 
 | # | App | Why it's on the list | Status |
 |---|---|---|---|
-| 1 | `electron/electron-quick-start` | Baseline. Nothing exotic. | pending |
+| 1 | `electron/electron-quick-start` | Baseline. Nothing exotic. | **boots** (commit 60751ca+; verified 2026-08-14) |
 | 2 | `sindresorhus/electron-quick-start-typescript` | TS entry, same shape. | pending |
 | 3 | `hyper` (Vercel terminal) | Custom title bar + PTY. First native-module hurdle. | pending |
 | 4 | `simplenote-electron` | Real IPC surface, persistence, spellcheck. | pending |
@@ -17,6 +17,16 @@ Difficulty roughly ascending. A break on rung N is a hard blocker until the unde
 | 7 | `microsoft/vscode` | Multi-process, native modules (node-pty, keytar), custom protocols, frameless custom title bar, spellcheck, deep IPC surface, Menu, Touch Bar. The hardest thing in the wild. | pending |
 
 Any Electron app not on this list is fair game to add. Priority is variety of APIs stressed, not popularity.
+
+## Rung 1 report
+
+`electron/electron-quick-start` boots against volt via the documented two-step shim (`volt.manifest.json` + `npm install @volt/electron-compat @volt/cli`). Uncovered on first run:
+
+- `node_modules/electron` from the real Electron devDep is a directory, not a symlink; the CLI's alias step used `unlinkSync` which fails on directories. Fix: `rmSync(..., { recursive: true })` before writing the symlink.
+- CLI's `findCore` only walked up from `cwd`; when the app lives outside the volt monorepo, that never finds `target/`. Fix: also walk up from the CLI script's own location and honour `VOLT_CORE_BIN`.
+- The default preload didn't expose `process.versions`, which broke EQS's preload that reads chrome/node/electron versions. Fix: added a `process` shim to `preload.js` with `versions`, `platform`, `arch`, `env`, `argv`, `nextTick`.
+
+All three fixes are in the compat layer, none app-specific.
 
 ## How an entry gets added
 

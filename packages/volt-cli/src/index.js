@@ -3,7 +3,7 @@
 
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join, relative } from "node:path";
-import { readdirSync, statSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, existsSync, symlinkSync, lstatSync, unlinkSync } from "node:fs";
+import { readdirSync, statSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, existsSync, symlinkSync, lstatSync, unlinkSync, rmSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -70,7 +70,11 @@ function ensureElectronAlias(cwd) {
   const link = join(nm, "electron");
   try {
     const st = lstatSync(link);
-    if (st.isSymbolicLink() || st.isDirectory() || st.isFile()) unlinkSync(link);
+    if (st.isSymbolicLink()) {
+      unlinkSync(link);
+    } else if (st.isDirectory() || st.isFile()) {
+      rmSync(link, { recursive: true, force: true });
+    }
   } catch {}
   const rel = relative(nm, target);
   symlinkSync(rel, link, "dir");
@@ -187,19 +191,32 @@ function infoPlist({ appName, version, bundleId }) {
 }
 
 function findCore() {
-  let dir = process.cwd();
-  for (let i = 0; i < 8; i++) {
-    for (const flavour of ["release", "debug"]) {
-      const p = resolve(dir, "target", flavour, "volt-core");
-      if (existsSync(p)) return p;
+  if (process.env.VOLT_CORE_BIN && existsSync(process.env.VOLT_CORE_BIN)) {
+    return process.env.VOLT_CORE_BIN;
+  }
+  const roots = [process.cwd(), __dirname];
+  for (const root of roots) {
+    let dir = root;
+    for (let i = 0; i < 12; i++) {
+      for (const flavour of ["release", "debug"]) {
+        const p = resolve(dir, "target", flavour, "volt-core");
+        if (existsSync(p)) return p;
+      }
+      const bin = resolve(dir, "node_modules", ".bin", "volt-core");
+      if (existsSync(bin)) return bin;
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
     }
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
   }
   const which = spawnSync("which", ["volt-core"], { encoding: "utf8" });
   if (which.status === 0) return which.stdout.trim();
-  throw new Error("volt-core binary not found; run `cargo build -p volt-core` at the repo root");
+  throw new Error(
+    "volt-core binary not found. Options:\n" +
+    "  1. cargo build -p volt-core at the volt repo root\n" +
+    "  2. set VOLT_CORE_BIN=/absolute/path/to/volt-core\n" +
+    "  3. install a prebuilt binary into node_modules/.bin/volt-core",
+  );
 }
 
 function copyDir(src, dst) {
