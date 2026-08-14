@@ -9,7 +9,7 @@ Difficulty roughly ascending. A break on rung N is a hard blocker until the unde
 | # | App | Why it's on the list | Status |
 |---|---|---|---|
 | 1 | `electron/electron-quick-start` | Baseline. Nothing exotic. | **boots** (commit 60751ca+; verified 2026-08-14) |
-| 2 | `sindresorhus/electron-quick-start-typescript` | TS entry, same shape. | pending |
+| 2 | `electron/electron-quick-start-typescript` | TS entry, same shape. | **boots** (commit 65f6abb+; verified 2026-08-14) |
 | 3 | `hyper` (Vercel terminal) | Custom title bar + PTY. First native-module hurdle. | pending |
 | 4 | `simplenote-electron` | Real IPC surface, persistence, spellcheck. | pending |
 | 5 | `standardnotes-app` | Encryption, protocol handlers, packaged React app. | pending |
@@ -27,6 +27,14 @@ Any Electron app not on this list is fair game to add. Priority is variety of AP
 - The default preload didn't expose `process.versions`, which broke EQS's preload that reads chrome/node/electron versions. Fix: added a `process` shim to `preload.js` with `versions`, `platform`, `arch`, `env`, `argv`, `nextTick`.
 
 All three fixes are in the compat layer, none app-specific.
+
+## Rung 2 report
+
+`electron-quick-start-typescript` follows the same recipe (build to `dist/`, point manifest at `dist/main.js`) and boots. Uncovered one more bug:
+
+- EQS-TS calls `mainWindow.webContents.openDevTools()` unconditionally. In electron-compat this was fire-and-forget (`host().send`), but the Rust protocol declared `webContents.openDevTools` with a required `reply_id`. The command decoded as malformed and Rust logged `bad message: missing field 'reply_id'`; the app kept running because the failure was silent. Fix: JS uses `host().request` for these too, matching the ack contract.
+
+Fix is in the compat layer, not app-specific.
 
 ## How an entry gets added
 

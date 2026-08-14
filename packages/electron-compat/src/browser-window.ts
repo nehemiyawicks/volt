@@ -169,18 +169,15 @@ export class WebContents extends EventEmitter {
   }
 
   openDevTools(): void {
-    if (this.windowId !== null) host().send("webContents.openDevTools", { window_id: this.windowId });
-    else void this.win._windowIdPromise().then((id) => host().send("webContents.openDevTools", { window_id: id }));
+    void this.win._windowIdPromise().then((id) => host().request("webContents.openDevTools", { window_id: id }));
   }
 
   closeDevTools(): void {
-    if (this.windowId !== null) host().send("webContents.closeDevTools", { window_id: this.windowId });
-    else void this.win._windowIdPromise().then((id) => host().send("webContents.closeDevTools", { window_id: id }));
+    void this.win._windowIdPromise().then((id) => host().request("webContents.closeDevTools", { window_id: id }));
   }
 
   toggleDevTools(): void {
-    if (this.windowId !== null) host().send("webContents.toggleDevTools", { window_id: this.windowId });
-    else void this.win._windowIdPromise().then((id) => host().send("webContents.toggleDevTools", { window_id: id }));
+    void this.win._windowIdPromise().then((id) => host().request("webContents.toggleDevTools", { window_id: id }));
   }
 
   send(channel: string, ...args: unknown[]): void {
