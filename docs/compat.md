@@ -31,6 +31,18 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `autoUpdater.checkForUpdates()` | stub | fires `checking-for-update` then `update-not-available`; no real update backend |
 | `protocol.registerFileProtocol` and friends | stub | handlers stored but not wired to wry's custom-protocol backend yet |
 | `desktopCapturer.getSources` | stub | returns empty array |
+| `WebContents.fromId(id)` / `getAllWebContents` / `getFocusedWebContents` | works | JS-side registry keyed by window id |
+| `BrowserWindow.fromWebContents(wc)` | works | scans window registry for matching WebContents |
+| `app.relaunch({ args?, execPath? })` | works | detached spawn of execPath+argv; combine with `app.exit()` |
+| `app.on('web-contents-created')` / `on('browser-window-created')` | works | fires when a new BrowserWindow's id resolves |
+| `app.on('certificate-error')` | stub | event surface only; WKNavigationDelegate wiring is v0.3 |
+| `ipcMain.on(channel, listener)` | works | inherits EventEmitter; fires alongside `handle()` for `.send()` messages |
+| `BrowserWindow.setFullScreen(flag)` | works | tao Window::set_fullscreen with Borderless mode |
+| `BrowserWindow.isFullScreen()`/`isMaximized()`/`isMinimized()`/`isVisible()` | partial | reads cached state mirrored from JS-side optimistic updates + host `window.stateChanged` events (only fullscreen wired end-to-end today) |
+| `BrowserWindow.on('maximize'/'unmaximize'/'minimize'/'restore'/'show'/'hide'/'enter-full-screen'/'leave-full-screen')` | partial | fired on programmatic changes; externally triggered changes (title bar buttons) don't yet fire because tao doesn't emit them |
+| `webContents.setWindowOpenHandler(handler)` | partial | handler is consulted; `{ action: 'allow' }` flips the Rust-side deny flag so the NEXT new-window request opens in-webview; current request always shell-opens. Match for the common "allow known OAuth flows" pattern; not for per-URL fine-grained decisions |
+| `net.request({ url, method, headers })` | works | wraps Node http/https; supports GET/POST/streamed responses |
+| `crashReporter.start` and friends | stub | no-op crash uploader |
 | `crashReporter.start` and friends | stub | no-op; no crash uploader |
 | `net.request` | works | wraps Node http/https; supports GET, POST, headers, streamed response |
 | `app.commandLine` | stub | appendSwitch/appendArgument/hasSwitch no-op; volt does not forward Chromium flags |
