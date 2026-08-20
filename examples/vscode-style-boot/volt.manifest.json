@@ -1,0 +1,5 @@
+{
+  "name": "vscode-style-boot",
+  "entry": "src/main.js",
+  "runtime": "auto"
+}
