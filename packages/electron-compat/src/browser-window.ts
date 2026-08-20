@@ -166,6 +166,92 @@ export class BrowserWindow extends EventEmitter {
     await host().request("window.setAlwaysOnTop", { window_id: await this.idPromise, flag });
   }
 
+  async setSize(width: number, height: number, _animate?: boolean): Promise<void> {
+    await this.setBounds({ width, height });
+  }
+
+  async setPosition(x: number, y: number, _animate?: boolean): Promise<void> {
+    await this.setBounds({ x, y });
+  }
+
+  async getSize(): Promise<[number, number]> {
+    const b = await this.getBounds();
+    return [b.width, b.height];
+  }
+
+  async getPosition(): Promise<[number, number]> {
+    const b = await this.getBounds();
+    return [b.x, b.y];
+  }
+
+  async getContentBounds(): Promise<Rectangle> { return this.getBounds(); }
+  async setContentBounds(b: Rectangle): Promise<void> { return this.setBounds(b); }
+  async getContentSize(): Promise<[number, number]> { return this.getSize(); }
+  async setContentSize(w: number, h: number): Promise<void> { return this.setSize(w, h); }
+
+  setMinimumSize(_w: number, _h: number): void {}
+  setMaximumSize(_w: number, _h: number): void {}
+  getMinimumSize(): [number, number] { return [0, 0]; }
+  getMaximumSize(): [number, number] { return [0, 0]; }
+
+  setResizable(_r: boolean): void {}
+  isResizable(): boolean { return true; }
+  setMovable(_m: boolean): void {}
+  isMovable(): boolean { return true; }
+  setMinimizable(_m: boolean): void {}
+  isMinimizable(): boolean { return true; }
+  setMaximizable(_m: boolean): void {}
+  isMaximizable(): boolean { return true; }
+  setFullScreenable(_f: boolean): void {}
+  isFullScreenable(): boolean { return true; }
+  setClosable(_c: boolean): void {}
+  isClosable(): boolean { return true; }
+
+  isVisible(): boolean { return true; }
+  isMinimized(): boolean { return false; }
+  isMaximized(): boolean { return false; }
+  isFocused(): boolean { return true; }
+  isFullScreen(): boolean { return false; }
+  isSimpleFullScreen(): boolean { return false; }
+  setFullScreen(_f: boolean): void {}
+
+  setBackgroundColor(_color: string): void {}
+  setHasShadow(_s: boolean): void {}
+  hasShadow(): boolean { return true; }
+  setOpacity(_o: number): void {}
+  getOpacity(): number { return 1; }
+  setVisibleOnAllWorkspaces(_v: boolean): void {}
+  isVisibleOnAllWorkspaces(): boolean { return false; }
+  setIgnoreMouseEvents(_i: boolean): void {}
+  setContentProtection(_e: boolean): void {}
+  setFocusable(_f: boolean): void {}
+  isFocusable(): boolean { return true; }
+
+  setMenu(_menu: unknown): void {}
+  removeMenu(): void {}
+  setMenuBarVisibility(_v: boolean): void {}
+  isMenuBarVisible(): boolean { return true; }
+  setAutoHideMenuBar(_h: boolean): void {}
+  isAutoHideMenuBar(): boolean { return false; }
+
+  flashFrame(_flag: boolean): void {}
+  setSkipTaskbar(_skip: boolean): void {}
+  moveTop(): void {}
+  moveAbove(_id: string): void {}
+  center(): void {}
+
+  setDocumentEdited(_e: boolean): void {}
+  isDocumentEdited(): boolean { return false; }
+  setRepresentedFilename(_p: string): void {}
+  getRepresentedFilename(): string { return ""; }
+
+  setTouchBar(_bar: unknown): void {}
+  setBrowserView(_view: unknown): void {}
+  getBrowserView(): null { return null; }
+  addBrowserView(_view: unknown): void {}
+  removeBrowserView(_view: unknown): void {}
+  getBrowserViews(): unknown[] { return []; }
+
   _windowIdPromise(): Promise<number> {
     return this.idPromise;
   }
@@ -216,7 +302,59 @@ export class WebContents extends EventEmitter {
 
   getTitle(): string { return ""; }
   isLoading(): boolean { return false; }
+  isLoadingMainFrame(): boolean { return false; }
+  isWaitingForResponse(): boolean { return false; }
   isDestroyed(): boolean { return false; }
+  isDevToolsOpened(): boolean { return false; }
+  isDevToolsFocused(): boolean { return false; }
+  stop(): void {}
+  focus(): void {}
+  blur(): void {}
+  isFocused(): boolean { return false; }
+  getType(): string { return "webview"; }
+  getWebPreferences(): Record<string, unknown> { return {}; }
+  getMainFrame(): unknown { return this; }
+
+  setZoomFactor(_factor: number): void {}
+  getZoomFactor(): number { return 1; }
+  setZoomLevel(_level: number): void {}
+  getZoomLevel(): number { return 0; }
+  setVisualZoomLevelLimits(_min: number, _max: number): void {}
+  setUserAgent(_ua: string): void {}
+  getUserAgent(): string { return navigator?.userAgent ?? ""; }
+
+  insertCSS(_css: string): Promise<string> { return Promise.resolve(""); }
+  removeInsertedCSS(_key: string): Promise<void> { return Promise.resolve(); }
+  insertText(_text: string): Promise<void> { return Promise.resolve(); }
+  findInPage(_text: string, _opts?: unknown): number { return 0; }
+  stopFindInPage(_action: string): void {}
+  clearHistory(): void {}
+  canGoBack(): boolean { return false; }
+  canGoForward(): boolean { return false; }
+  goBack(): void { void this.executeJavaScript("history.back()"); }
+  goForward(): void { void this.executeJavaScript("history.forward()"); }
+  loadURL(url: string, _opts?: unknown): Promise<void> { return this.win.loadURL(url); }
+  downloadURL(_url: string): void {}
+  print(_opts?: unknown, _cb?: unknown): void {}
+  printToPDF(_opts?: unknown): Promise<Buffer> { return Promise.resolve(Buffer.alloc(0)); }
+
+  session = {
+    clearCache: async () => {},
+    clearStorageData: async () => {},
+    cookies: {
+      get: async () => [],
+      set: async () => {},
+      remove: async () => {},
+      flushStore: async () => {},
+    },
+    webRequest: {
+      onBeforeRequest: () => {},
+      onBeforeSendHeaders: () => {},
+      onCompleted: () => {},
+    },
+    setUserAgent: () => {},
+    getUserAgent: () => "",
+  };
 
   async reload(): Promise<void> {
     await this.executeJavaScript("location.reload()");
