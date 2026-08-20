@@ -101,6 +101,53 @@ DE-ELECTRON/
 | v0.9 | **Chromium backend** via CDP — VS Code renders | see next section |
 | v1.0 | Shared-runtime daemon; VS Code runs on shared Chromium | after v0.9 |
 
+## Two backends, one migration story
+
+Volt is a two-backend framework:
+
+**`engine: "webkit"` (default, v0.1)** — wry + WebKit + Bun/Node. RAM ~40 MB per app. Use for anything that doesn't need Chromium features. This is the original "less RAM than Electron" pitch and it holds: 5-8x lower per-app RAM than Electron.
+
+**`engine: "chromium"` (opt-in, v0.9)** — chromiumoxide + spawned Chromium + Bun/Node. RAM comparable to Electron for a single app until the shared runtime lands. Use for VS Code and any app that requires `<webview>` guests, `contextIsolation` isolated worlds, CDP, or Chromium-only rendering. Migration ergonomics identical to WebKit mode.
+
+**Migration story stays the same across both.** `npm install @volt/electron-compat @volt/cli`, alias `electron`, run `volt dev`. The `engine` key in `volt.manifest.json` is the only knob. Users pick per app based on what the app needs.
+
+### Honest efficiency math
+
+For a single VS Code running on volt-chromium (v0.9 today, no shared runtime):
+
+|  | Electron VS Code | Volt-chromium VS Code | Delta |
+|---|---|---|---|
+| Chromium browser process | 150 MB | 150 MB (spawned) | 0 |
+| Main-process runtime | 40 MB (Node) | 20 MB (Bun) | **-20 MB** |
+| Renderer process | 80 MB | 80 MB | 0 |
+| GPU process | 40 MB | 40 MB | 0 |
+| Volt-core-chromium Rust host | 0 | 10 MB | +10 |
+| Total | **~310 MB** | **~300 MB** | ~-10 MB |
+
+That's a ~3% RAM win for one VS Code. Not the story. The Chromium engine's efficiency pitch is:
+
+1. Chromium binary shipped once on the system (120 MB) instead of bundled per app (150 MB × N apps).
+2. Bun's smaller main process (20 MB vs 40 MB).
+3. Chromium auto-update is per-system, not per-app.
+
+**The real Chromium-mode RAM win requires the v1.0 shared runtime** (see the "M-infinity" goal). One Chromium browser process serving N apps as isolated tab groups. Then 10 volt-chromium apps use ~1.2 GB vs Electron's ~3.1 GB. Until v1.0, Chromium-engine is a compatibility play; the RAM story lives with WebKit-engine.
+
+### When to pick which engine
+
+Use **`engine: "webkit"`** for:
+- Any app that already works on the volt v0.1 quick-start pattern
+- Slack, Discord, Notion, Simplenote, Standard Notes, Logseq, most utility apps
+- Anything where the primary constraint is RAM per app
+
+Use **`engine: "chromium"`** for:
+- VS Code and any editor that embeds Monaco with heavy Chromium-tuned CSS
+- Apps that use `<webview>` guest tags (Ferdium's service embedding, Copilot Chat)
+- Apps that depend on `contextIsolation` in real isolated worlds
+- Apps using the Chrome DevTools Protocol directly (browser automation, embedded debuggers)
+- Anything that breaks on WebKit render quirks
+
+Docs will keep a per-app recommendation in [`docs/hardest-apps.md`](docs/hardest-apps.md).
+
 ## The Chromium pivot (v0.9)
 
 **Reason:** VS Code's renderer depends on Chromium-only features (`<webview>` tag, V8 snapshot, `contextIsolation` isolated worlds, CDP, blink layout). WebKit cannot render VS Code correctly. To hit the "run VS Code" goal, the renderer backend must be Chromium.

@@ -27,7 +27,13 @@ VS Code depends on Chromium-specific features that WebKit does not have and cann
 | Chromium DevTools protocol (CDP) | Debug adapters, "Inspect" for webviews | WebKit inspector is a different protocol |
 | Chrome extension API surface | vsix loading uses it in places | WebKit has none of this |
 
-**Conclusion:** volt in its current form can get VS Code's main process to run, but cannot render the workbench UI correctly. The renderer engine mismatch is not fixable via compat-layer stubs.
+**Conclusion:** volt with the default WebKit engine cannot render VS Code's workbench correctly. The renderer engine mismatch is not fixable via compat-layer stubs.
+
+**Update (v0.9): the Chromium engine.** volt now ships a second host binary (`volt-core-chromium`) that spawns a real Chromium via CDP. Set `"engine": "chromium"` in `volt.manifest.json` and every WebKit blocker above is gone: `<webview>`, V8 snapshot, isolated worlds, CDP, Blink layout — all real, because it IS Blink.
+
+The tradeoff is that a single VS Code on volt-chromium is only ~3% lower RAM than VS Code on Electron. The efficiency wins for Chromium-mode kick in with the v1.0 shared runtime (one Chromium serving N apps as separate tab groups) and with the WebKit engine (which is 5-8x lighter but only works for apps that don't need Chromium-specific features).
+
+See PLAN.md "Two backends, one migration story" for the honest efficiency math and the pick-your-engine matrix.
 
 ## Path forward for actually running VS Code
 

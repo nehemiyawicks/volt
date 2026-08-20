@@ -10,13 +10,19 @@ Electron ships a full Chromium and Node.js runtime with every app. 150 to 350 MB
 
 Volt's bet: **the compat layer is the killer feature.** You keep your `main.ts`, your IPC handlers, your `BrowserWindow` code. You lose 150 MB. The target is any Electron app, not a specific one; see [`docs/hardest-apps.md`](docs/hardest-apps.md) for the ladder of apps that get tested on every release.
 
-| | Electron | Tauri | Electrobun | Volt |
-|---|---|---|---|---|
-| Idle RAM (single window) | 150 to 350 MB | 30 to 50 MB | ~35 MB | ~40 MB |
-| Installer size | 100+ MB | <10 MB | ~12 MB | <15 MB |
-| Backend language | JS / TS | Rust | Bun (partial rewrite) | JS / TS |
-| Runs an unmodified Electron `main.ts` | yes (native) | no | no | **yes** |
-| Uses `import { app, BrowserWindow } from 'electron'` unchanged | yes | no | no | **yes** |
+Volt ships two backends, picked per-app via `manifest.engine`:
+
+- **`engine: "webkit"` (default)** — wry + WebKit. ~40 MB RAM per app. Best for most Electron apps.
+- **`engine: "chromium"` (v0.9)** — Chromium via CDP. Match Electron on RAM per single app (single-app efficiency win from Bun main process is small; the shared-runtime v1.0 is where multi-app Chromium-mode gets its 2x+ RAM win). Required for VS Code and apps that use `<webview>`, V8 snapshots, or CDP.
+
+| | Electron | Tauri | Electrobun | Volt (webkit) | Volt (chromium) |
+|---|---|---|---|---|---|
+| Idle RAM (single window) | 150-350 MB | 30-50 MB | ~35 MB | **~40 MB** | ~290 MB |
+| Installer size per app | 100+ MB | <10 MB | ~12 MB | **<15 MB** | <15 MB + system Chromium |
+| Backend language | JS / TS | Rust | Bun (partial rewrite) | **JS / TS** | JS / TS |
+| Runs an unmodified Electron `main.ts` | yes (native) | no | no | **yes** | **yes** |
+| Renders VS Code correctly | yes | no | no | no | **yes** |
+| Uses `import { app, BrowserWindow } from 'electron'` unchanged | yes | no | no | **yes** | **yes** |
 
 ## What ships today
 
