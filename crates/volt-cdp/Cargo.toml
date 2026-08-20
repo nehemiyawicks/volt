@@ -1,0 +1,17 @@
+[package]
+name = "volt-cdp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Chromium/CDP backend for volt. Spawns a Chromium browser and drives it via the DevTools Protocol; each volt BrowserWindow becomes a CDP Target."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tokio = { version = "1", features = ["full"] }
+chromiumoxide = { version = "0.6", features = ["tokio-runtime"], default-features = false }
+futures = "0.3"

@@ -70,6 +70,20 @@ The goal is that **any Electron app** boots on volt with the documented two-step
 
 The ladder in [`docs/hardest-apps.md`](docs/hardest-apps.md) exists to force coverage breadth; every rung passing is coverage evidence, not a per-app score.
 
+## M6. Chromium backend (v0.9)
+
+Required for VS Code and any app that depends on Chromium-only rendering features.
+
+**G6.1** A `volt.manifest.json` with `"engine": "chromium"` boots the quick-start example through Chromium (spawned via CDP) instead of wry+WebKit.
+
+**G6.2** VS Code's boot sequence completes: main process runs, workbench window opens, Monaco editor renders identically to Electron.
+
+**G6.3** VS Code integrated terminal works (`node-pty` loads and echoes input).
+
+**G6.4** RAM per-app for VS Code on volt+Chromium is measurably lower than VS Code on Electron for the same workload (main-process savings from Bun; renderer parity from shared Chromium).
+
+**G6.5** No migration API change: the same `@volt/electron-compat` shim works against the Chromium backend.
+
 ## M-infinity. Deferred (post-traction)
 
 Shared-runtime daemon (stripped Chromium installed once per system, apps shrink to ~5 MB). Do not start this before M4 is done. It's the biggest architectural bet in the whole plan and only pays off after real adoption.

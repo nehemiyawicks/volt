@@ -1,0 +1,12 @@
+{
+  "name": "quick-start-chromium",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "main": "src/main.js",
+  "scripts": { "dev": "volt dev" },
+  "dependencies": {
+    "@volt/electron-compat": "*",
+    "@volt/cli": "*"
+  }
+}

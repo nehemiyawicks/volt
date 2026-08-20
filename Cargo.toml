@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/volt-core"]
+members = ["crates/volt-core", "crates/volt-cdp", "crates/volt-core-chromium"]
 
 [workspace.package]
 version = "0.1.0"

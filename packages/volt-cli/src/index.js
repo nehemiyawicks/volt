@@ -54,7 +54,11 @@ async function dev() {
   const manifestPath = resolve(cwd, "volt.manifest.json");
   if (!existsSync(manifestPath)) throw new Error("no volt.manifest.json in this directory");
   ensureElectronAlias(cwd);
-  const core = findCore();
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const engine = manifest.engine ?? "webkit";
+  const binaryName = engine === "chromium" ? "volt-core-chromium" : "volt-core";
+  const core = findCore(binaryName);
+  console.error(`[volt] engine=${engine} binary=${core}`);
   const child = spawn(core, [], {
     stdio: "inherit",
     env: { ...process.env, VOLT_MANIFEST: manifestPath },
@@ -201,32 +205,33 @@ function infoPlist({ appName, version, bundleId }) {
 `;
 }
 
-function findCore() {
-  if (process.env.VOLT_CORE_BIN && existsSync(process.env.VOLT_CORE_BIN)) {
-    return process.env.VOLT_CORE_BIN;
+function findCore(binaryName = "volt-core") {
+  const envKey = binaryName === "volt-core-chromium" ? "VOLT_CORE_CHROMIUM_BIN" : "VOLT_CORE_BIN";
+  if (process.env[envKey] && existsSync(process.env[envKey])) {
+    return process.env[envKey];
   }
   const roots = [process.cwd(), __dirname];
   for (const root of roots) {
     let dir = root;
     for (let i = 0; i < 12; i++) {
       for (const flavour of ["release", "debug"]) {
-        const p = resolve(dir, "target", flavour, "volt-core");
+        const p = resolve(dir, "target", flavour, binaryName);
         if (existsSync(p)) return p;
       }
-      const bin = resolve(dir, "node_modules", ".bin", "volt-core");
+      const bin = resolve(dir, "node_modules", ".bin", binaryName);
       if (existsSync(bin)) return bin;
       const parent = dirname(dir);
       if (parent === dir) break;
       dir = parent;
     }
   }
-  const which = spawnSync("which", ["volt-core"], { encoding: "utf8" });
+  const which = spawnSync("which", [binaryName], { encoding: "utf8" });
   if (which.status === 0) return which.stdout.trim();
   throw new Error(
-    "volt-core binary not found. Options:\n" +
-    "  1. cargo build -p volt-core at the volt repo root\n" +
-    "  2. set VOLT_CORE_BIN=/absolute/path/to/volt-core\n" +
-    "  3. install a prebuilt binary into node_modules/.bin/volt-core",
+    `${binaryName} binary not found. Options:\n` +
+    `  1. cargo build -p ${binaryName === "volt-core-chromium" ? "volt-core-chromium" : "volt-core"} at the volt repo root\n` +
+    `  2. set ${envKey}=/absolute/path/to/${binaryName}\n` +
+    `  3. install a prebuilt binary into node_modules/.bin/${binaryName}`,
   );
 }
 

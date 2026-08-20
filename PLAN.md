@@ -98,7 +98,74 @@ DE-ELECTRON/
 | v0.2 | Windows + Linux; Menu/Tray/Notification/shell | +6 weeks |
 | v0.3 | `volt migrate` CLI, compatibility report | +4 weeks |
 | v0.5 | 80% Electron API surface, benchmarks published | +12 weeks |
-| v1.0 | Shared-runtime daemon (only if traction justifies) | deferred |
+| v0.9 | **Chromium backend** via CDP — VS Code renders | see next section |
+| v1.0 | Shared-runtime daemon; VS Code runs on shared Chromium | after v0.9 |
+
+## The Chromium pivot (v0.9)
+
+**Reason:** VS Code's renderer depends on Chromium-only features (`<webview>` tag, V8 snapshot, `contextIsolation` isolated worlds, CDP, blink layout). WebKit cannot render VS Code correctly. To hit the "run VS Code" goal, the renderer backend must be Chromium.
+
+**Non-negotiables preserved:**
+1. Migration ergonomics stay the same. `npm install @volt/electron-compat @volt/cli` + one alias. Devs never touch the backend choice.
+2. `require('electron')` returns the same shape.
+3. `volt build` still produces a `.app` / `.exe` / `.AppImage`.
+4. Efficiency (RAM + startup) must beat Electron for the same workload. Two levers: leaner main process (Bun vs Node), and shared runtime (v1.0) so N apps share one Chromium install.
+
+**Approach: Chromium via CDP, not CEF.**
+
+CEF Rust bindings are immature. Chrome DevTools Protocol (CDP) over WebSocket is a stable, well-documented interface into any Chromium build. `chromiumoxide` is a mature async CDP client crate. We spawn Chromium with `--remote-debugging-port`, connect via CDP, and create tabs as `BrowserWindow` instances.
+
+**Runtime layout for a v0.9 volt app:**
+
+```
++-------------------------------------------------------+
+|  User code (unchanged): require('electron') ...       |
++---------------------------+---------------------------+
+                            |
++---------------------------+---------------------------+
+|  @volt/electron-compat  (unchanged; still stdio IPC)  |
++---------------------------+---------------------------+
+                            | stdio (JSON, newline)
++---------------------------+---------------------------+
+|  volt-core (Rust)                                     |
+|  manifest.engine = "webkit"     manifest.engine = "chromium"
+|  --------------------------     --------------------------
+|  wry + tao (v0.1)               volt-cdp: spawns Chrome,
+|                                  connects via CDP,
+|                                  each BrowserWindow = a Target
++---------------------------+---------------------------+
+                            |
++---------------------------+---------------------------+
+|  Bun or Chrome for Testing / user's Chrome / bundled  |
++-------------------------------------------------------+
+```
+
+**Chromium binary source options (ranked):**
+1. Bundled Chrome for Testing (Puppeteer's approach; ~200MB unzipped, downloaded on first run)
+2. Detect local Chrome/Chromium/Edge and use it
+3. `puppeteer` binary layout for consistency with Playwright
+
+Users installing volt for the first time get Chrome downloaded to `~/.volt/chromium/<version>/`. Subsequent apps share it. This is the v1.0 "shared runtime" story: one Chromium on disk, one running process serving multiple volt apps.
+
+**What CDP unlocks for VS Code:**
+- Real `<webview>` (Chromium's guest content)
+- Real V8 snapshot support (Chromium loads its own)
+- `contextIsolation` in real isolated worlds
+- CDP itself is what VS Code uses for its own debugger — full compatibility
+- Blink layout — Monaco editor renders exactly as it does under Electron
+
+**What CDP does NOT unlock:**
+- Native modules built against Electron's Node ABI still need `npm rebuild` for Bun/Node
+- Some Chromium features exposed as C++ APIs in Electron have no CDP equivalent (rare in practice for renderer code)
+
+**Migration path stays identical:**
+```json
+// volt.manifest.json
+{ "name": "code", "entry": "out/main.js", "runtime": "node", "engine": "chromium" }
+```
+That's it. The `engine` key defaults to `"webkit"` for existing users; setting `"chromium"` opts into the CDP backend. Everything else (`@volt/electron-compat`, `volt dev`, `volt build`) is unchanged.
+
+**Timing:** v0.9 lands after v0.5 (compat matrix at 80%). CDP integration itself is 2-4 weeks of Rust; Chromium bootstrap/download is another 1-2. VS Code as the acceptance test.
 
 ## Design Principles
 

@@ -1,0 +1,6 @@
+{
+  "name": "quick-start-chromium",
+  "entry": "src/main.js",
+  "runtime": "auto",
+  "engine": "chromium"
+}
