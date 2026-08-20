@@ -26,6 +26,11 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `app.setAsDefaultProtocolClient` / friends | stub | protocol-handler registration is v0.3 |
 | `app.requestSingleInstanceLock` | stub | always returns true (no cross-process guard yet) |
 | `session.defaultSession` | stub | class exists with cookies, webRequest, clearCache etc. as no-ops so `session.defaultSession.clearCache()` doesn't crash the app; real backend v0.3+ |
+| `powerMonitor.*` | stub | getSystemIdleState/isOnBatteryPower/etc. return neutral defaults; events don't fire |
+| `systemPreferences.*` | stub | getAccentColor/getEffectiveAppearance/isDarkMode return neutral defaults; enough that apps don't crash reading them |
+| `autoUpdater.checkForUpdates()` | stub | fires `checking-for-update` then `update-not-available`; no real update backend |
+| `protocol.registerFileProtocol` and friends | stub | handlers stored but not wired to wry's custom-protocol backend yet |
+| `desktopCapturer.getSources` | stub | returns empty array |
 | `BrowserWindow` constructor | works | `title`, `width`, `height`, `x`, `y`, `resizable`, `minimizable`, `maximizable`, `alwaysOnTop`, `frame`, `transparent`, `show`, `webPreferences` |
 | `BrowserWindow.loadURL()` | works | |
 | `BrowserWindow.loadFile()` | works | resolves to `file://` URL |
