@@ -20,9 +20,11 @@ class IpcMain extends EventEmitter {
   private async route(msg: { window_id: number; invoke_id: string; channel: string; args: unknown[] }) {
     const h = this.handlers.get(msg.channel);
     if (!msg.invoke_id) {
+      const event = { sender: { id: msg.window_id, send: (_ch: string, ..._a: unknown[]) => {} }, senderId: msg.window_id };
+      this.emit(msg.channel, event, ...msg.args);
       if (h) {
         try {
-          await h({ sender: { id: msg.window_id } }, ...msg.args);
+          await h(event as unknown as IpcMainInvokeEvent, ...msg.args);
         } catch (err) {
           process.stderr.write(`[ipcMain] handler for '${msg.channel}' threw: ${err}\n`);
         }

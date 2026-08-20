@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
 import { host } from "./host.js";
+import { app } from "./app.js";
 
 export interface WebPreferences {
   preload?: string;
@@ -37,6 +38,11 @@ export class BrowserWindow extends EventEmitter {
   private static registry = new Map<number, BrowserWindow>();
   private static focusedId: number | null = null;
 
+  private _isMaximized = false;
+  private _isMinimized = false;
+  private _isVisible = true;
+  private _isFullScreen = false;
+
   constructor(options: BrowserWindowOptions = {}) {
     super();
     this.webContents = new WebContents(this);
@@ -46,6 +52,8 @@ export class BrowserWindow extends EventEmitter {
         (this as any).id = r.id;
         (this.webContents as any)._setId(r.id);
         BrowserWindow.registry.set(r.id, this);
+        (app as unknown as { emitWebContentsCreated: (wc: unknown) => void }).emitWebContentsCreated(this.webContents);
+        (app as unknown as { emitBrowserWindowCreated: (w: unknown) => void }).emitBrowserWindowCreated(this);
         const h = host();
         h.on("window.closed", (closedId: number) => {
           if (closedId === r.id) {
@@ -75,6 +83,15 @@ export class BrowserWindow extends EventEmitter {
             }
           }
         });
+        h.on("window.stateChanged", (msg: { id: number; state: string; value: boolean }) => {
+          if (msg.id !== r.id) return;
+          switch (msg.state) {
+            case "maximized": this._isMaximized = msg.value; this.emit(msg.value ? "maximize" : "unmaximize"); break;
+            case "minimized": this._isMinimized = msg.value; this.emit(msg.value ? "minimize" : "restore"); break;
+            case "visible": this._isVisible = msg.value; this.emit(msg.value ? "show" : "hide"); break;
+            case "fullscreen": this._isFullScreen = msg.value; this.emit(msg.value ? "enter-full-screen" : "leave-full-screen"); break;
+          }
+        });
         return r.id;
       });
   }
@@ -93,6 +110,13 @@ export class BrowserWindow extends EventEmitter {
     return BrowserWindow.focusedId !== null
       ? BrowserWindow.registry.get(BrowserWindow.focusedId) ?? null
       : null;
+  }
+
+  static fromWebContents(wc: WebContents): BrowserWindow | null {
+    for (const w of BrowserWindow.registry.values()) {
+      if (w.webContents === wc) return w;
+    }
+    return null;
   }
 
   async loadURL(url: string): Promise<void> {
@@ -216,13 +240,15 @@ export class BrowserWindow extends EventEmitter {
   setClosable(_c: boolean): void {}
   isClosable(): boolean { return true; }
 
-  isVisible(): boolean { return true; }
-  isMinimized(): boolean { return false; }
-  isMaximized(): boolean { return false; }
-  isFocused(): boolean { return true; }
-  isFullScreen(): boolean { return false; }
-  isSimpleFullScreen(): boolean { return false; }
-  setFullScreen(_f: boolean): void {}
+  isVisible(): boolean { return this._isVisible; }
+  isMinimized(): boolean { return this._isMinimized; }
+  isMaximized(): boolean { return this._isMaximized; }
+  isFocused(): boolean { return BrowserWindow.focusedId === this.id; }
+  isFullScreen(): boolean { return this._isFullScreen; }
+  isSimpleFullScreen(): boolean { return this._isFullScreen; }
+  async setFullScreen(flag: boolean): Promise<void> {
+    await host().request("window.setFullScreen", { window_id: await this.idPromise, flag });
+  }
 
   setBackgroundColor(_color: string): void {}
   setHasShadow(_s: boolean): void {}
@@ -268,6 +294,7 @@ export class BrowserWindow extends EventEmitter {
 
 export class WebContents extends EventEmitter {
   private windowId: number | null = null;
+  private static registry = new Map<number, WebContents>();
 
   constructor(private win: BrowserWindow) {
     super();
@@ -275,6 +302,22 @@ export class WebContents extends EventEmitter {
 
   _setId(id: number) {
     this.windowId = id;
+    WebContents.registry.set(id, this);
+  }
+
+  get id(): number { return this.windowId ?? 0; }
+
+  static fromId(id: number): WebContents | null {
+    return WebContents.registry.get(id) ?? null;
+  }
+
+  static getAllWebContents(): WebContents[] {
+    return [...WebContents.registry.values()];
+  }
+
+  static getFocusedWebContents(): WebContents | null {
+    const bw = BrowserWindow.getFocusedWindow();
+    return bw ? bw.webContents : null;
   }
 
   openDevTools(): void {

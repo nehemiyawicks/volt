@@ -20,6 +20,14 @@ class App extends EventEmitter {
     });
   }
 
+  emitWebContentsCreated(wc: unknown): void {
+    this.emit("web-contents-created", { preventDefault() {}, defaultPrevented: false }, wc);
+  }
+  emitBrowserWindowCreated(win: unknown): void {
+    this.emit("browser-window-created", { preventDefault() {}, defaultPrevented: false }, win);
+  }
+  emitCertificateError(...args: unknown[]): void { this.emit("certificate-error", ...args); }
+
   whenReady(): Promise<void> {
     return host().whenReady();
   }
@@ -36,6 +44,17 @@ class App extends EventEmitter {
     this.emit("will-quit");
     host().send("app.quit");
     process.exit(code);
+  }
+
+  relaunch(options: { args?: string[]; execPath?: string } = {}): void {
+    const { spawn } = require("node:child_process");
+    const execPath = options.execPath ?? process.execPath;
+    const args = options.args ?? process.argv.slice(1);
+    spawn(execPath, args, {
+      detached: true,
+      stdio: "ignore",
+      env: process.env,
+    }).unref();
   }
 
   isReady(): boolean {
