@@ -1,0 +1,5 @@
+{
+  "name": "stress-test",
+  "entry": "src/main.js",
+  "runtime": "auto"
+}

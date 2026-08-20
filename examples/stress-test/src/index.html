@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Volt stress test</title>
+  <style>
+    body { font: 14px/1.5 system-ui; padding: 1.5rem; margin: 0; }
+    h1 { font-size: 16px; margin: 0 0 1rem 0; }
+    pre { background: #f4f4f5; padding: 0.5rem; border-radius: 4px; font-size: 12px; max-height: 40vh; overflow: auto; }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; }
+    button { padding: 0.3rem 0.75rem; border: 1px solid #d4d4d8; background: #fff; border-radius: 4px; cursor: pointer; }
+    .ok { color: #16a34a; } .fail { color: #dc2626; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>Volt stress test</h1>
+  <p>Preload versions: <code id="v"></code></p>
+  <div class="row">
+    <button id="check">Run checks</button>
+    <button id="pick">Pick file</button>
+    <button id="err">Show error dialog</button>
+    <a href="https://github.com/nehemiyawicks/volt" target="_blank">Open GitHub (target=_blank)</a>
+  </div>
+  <pre id="out"></pre>
+  <script>
+    const out = document.getElementById("out");
+    document.getElementById("v").textContent = JSON.stringify(window.stress.versions);
+    document.getElementById("check").onclick = async () => {
+      const lines = await window.stress.runChecks();
+      out.textContent = lines.join("\n");
+      out.innerHTML = out.innerHTML
+        .replace(/OK /g, '<span class="ok">OK</span> ')
+        .replace(/!! /g, '<span class="fail">!!</span> ');
+    };
+    document.getElementById("pick").onclick = async () => {
+      const p = await window.stress.pickFile();
+      out.textContent = "Picked: " + (p ?? "(cancelled)");
+    };
+    document.getElementById("err").onclick = () => window.stress.showError();
+    window.stress.onFocusPicker(() => document.getElementById("pick").focus());
+  </script>
+</body>
+</html>

@@ -108,10 +108,19 @@ export class BrowserWindow extends EventEmitter {
 
   async loadFile(filePath: string): Promise<void> {
     const path = await import("node:path");
-    await host().request("window.loadUrl", {
-      window_id: await this.idPromise,
-      url: "file://" + path.resolve(filePath),
-    });
+    const fs = await import("node:fs/promises");
+    const abs = path.resolve(filePath);
+    const dir = path.dirname(abs);
+    let html = await fs.readFile(abs, "utf8");
+    const baseHref = `<base href="file://${dir}/">`;
+    if (/<head[^>]*>/i.test(html)) {
+      html = html.replace(/<head([^>]*)>/i, `<head$1>${baseHref}`);
+    } else if (/<html[^>]*>/i.test(html)) {
+      html = html.replace(/<html([^>]*)>/i, `<html$1><head>${baseHref}</head>`);
+    } else {
+      html = `<!doctype html><html><head>${baseHref}</head><body>${html}</body></html>`;
+    }
+    await host().request("window.loadHtml", { window_id: await this.idPromise, html });
   }
 
   async loadHTML(html: string): Promise<void> {

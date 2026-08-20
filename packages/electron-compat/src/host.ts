@@ -2,6 +2,23 @@ import { EventEmitter } from "node:events";
 
 type Reply = { resolve: (v: unknown) => void; reject: (e: unknown) => void };
 
+const rawStdoutWrite: (chunk: string | Uint8Array) => boolean =
+  process.stdout.write.bind(process.stdout) as (chunk: string | Uint8Array) => boolean;
+
+if (process.env.VOLT_HOST === "1") {
+  const write = (chunk: string | Uint8Array) => process.stderr.write(chunk);
+  (process.stdout as unknown as { write: typeof write }).write = write;
+  console.log = (...args: unknown[]) => process.stderr.write(args.map(formatArg).join(" ") + "\n");
+  console.info = console.log;
+  console.debug = console.log;
+  console.warn = (...args: unknown[]) => process.stderr.write("[warn] " + args.map(formatArg).join(" ") + "\n");
+}
+
+function formatArg(x: unknown): string {
+  if (typeof x === "string") return x;
+  try { return JSON.stringify(x); } catch { return String(x); }
+}
+
 class Host extends EventEmitter {
   private pending = new Map<string, Reply>();
   private seq = 0;
@@ -86,7 +103,7 @@ class Host extends EventEmitter {
   }
 
   send(cmd: string, payload: Record<string, unknown> = {}): void {
-    process.stdout.write(JSON.stringify({ cmd, ...payload }) + "\n");
+    rawStdoutWrite(JSON.stringify({ cmd, ...payload }) + "\n");
   }
 
   request<T = unknown>(cmd: string, payload: Record<string, unknown> = {}): Promise<T> {
