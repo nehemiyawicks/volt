@@ -3,6 +3,7 @@ import { host } from "./host.js";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { execPath, argv } from "node:process";
+import { tryAcquireLock, releaseLock, hasSingleInstanceLock, onSecondInstance } from "./single-instance.js";
 
 export type PathName =
   | "home" | "appData" | "userData" | "sessionData" | "temp" | "exe"
@@ -69,9 +70,19 @@ class App extends EventEmitter {
   setAsDefaultProtocolClient(_protocol: string): boolean { return false; }
   removeAsDefaultProtocolClient(_protocol: string): boolean { return false; }
   isDefaultProtocolClient(_protocol: string): boolean { return false; }
-  requestSingleInstanceLock(_data?: unknown): boolean { return true; }
-  hasSingleInstanceLock(): boolean { return true; }
-  releaseSingleInstanceLock(): void {}
+  requestSingleInstanceLock(data?: unknown): boolean {
+    const gotLock = tryAcquireLock(data);
+    if (!gotLock) {
+      setTimeout(() => process.exit(0), 50);
+    } else {
+      onSecondInstance((event, argv, cwd, additionalData) => {
+        this.emit("second-instance", event, argv, cwd, additionalData);
+      });
+    }
+    return gotLock;
+  }
+  hasSingleInstanceLock(): boolean { return hasSingleInstanceLock(); }
+  releaseSingleInstanceLock(): void { releaseLock(); }
 
   commandLine = {
     appendSwitch(_switch: string, _value?: string): void {},
