@@ -68,6 +68,15 @@ fn main() -> Result<()> {
     thread::spawn(move || pump_events_to_js(child.stdin, rx_to_js));
 
     let hotkey_manager = global_hotkey::GlobalHotKeyManager::new().ok();
+
+    #[cfg(target_os = "macos")]
+    {
+        let default_menu = muda::Menu::new();
+        let _ = default_menu.append(&muda::Submenu::new("", true));
+        default_menu.init_for_nsapp();
+        std::mem::forget(default_menu);
+    }
+
     let mut state = AppState {
         windows: HashMap::new(),
         next_window_id: 1,
