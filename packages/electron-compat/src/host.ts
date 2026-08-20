@@ -85,6 +85,9 @@ class Host extends EventEmitter {
       case "webContents.didFinishLoad":
         this.emit("webContents.didFinishLoad", msg.window_id);
         return;
+      case "webContents.newWindowRequest":
+        this.emit("webContents.newWindowRequest", msg);
+        return;
       case "menu.click":
         this.emit("menu.click", msg);
         return;

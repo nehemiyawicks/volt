@@ -28,6 +28,7 @@ struct AppState {
     hotkeys: HashMap<String, global_hotkey::hotkey::HotKey>,
     hotkey_manager: Option<global_hotkey::GlobalHotKeyManager>,
     trays: HashMap<String, tray_icon::TrayIcon>,
+    new_window_deny: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 struct WindowSlot {
@@ -85,6 +86,7 @@ fn main() -> Result<()> {
         hotkeys: HashMap::new(),
         hotkey_manager,
         trays: HashMap::new(),
+        new_window_deny: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true)),
     };
     let _ = state.tx_to_js.send(JsEvent::Ready);
 
@@ -356,16 +358,26 @@ fn handle_command(
                     let finished = matches!(ev, wry::PageLoadEvent::Finished);
                     let _ = load_proxy.send_event(HostEvent::PageLoad { window_id: id, finished });
                 })
-                .with_new_window_req_handler(|url| {
-                    let opener = if cfg!(target_os = "macos") { "open" }
-                        else if cfg!(target_os = "windows") { "cmd" }
-                        else { "xdg-open" };
-                    if cfg!(target_os = "windows") {
-                        let _ = Command::new(opener).args(["/C", "start", "", &url]).spawn();
-                    } else {
-                        let _ = Command::new(opener).arg(&url).spawn();
+                .with_new_window_req_handler({
+                    let notify = state.tx_to_js.clone();
+                    let deny_flag = state.new_window_deny.clone();
+                    move |url| {
+                        let _ = notify.send(JsEvent::NewWindowRequest { window_id: id, url: url.clone() });
+                        let deny = deny_flag.load(std::sync::atomic::Ordering::Relaxed);
+                        if deny {
+                            let opener = if cfg!(target_os = "macos") { "open" }
+                                else if cfg!(target_os = "windows") { "cmd" }
+                                else { "xdg-open" };
+                            if cfg!(target_os = "windows") {
+                                let _ = Command::new(opener).args(["/C", "start", "", &url]).spawn();
+                            } else {
+                                let _ = Command::new(opener).arg(&url).spawn();
+                            }
+                            false
+                        } else {
+                            true
+                        }
                     }
-                    false
                 });
             if let Some(wp) = options.web_preferences.as_ref() {
                 if let Some(path) = wp.preload.as_deref() {
@@ -560,6 +572,10 @@ fn handle_command(
             } else {
                 slot.webview.open_devtools();
             }
+            ack(&state.tx_to_js, reply_id)?;
+        }
+        JsCommand::SetNewWindowOpenPolicy { window_id: _, deny, reply_id } => {
+            state.new_window_deny.store(deny, std::sync::atomic::Ordering::Relaxed);
             ack(&state.tx_to_js, reply_id)?;
         }
         JsCommand::ExecuteJavaScript { window_id, code, reply_id } => {

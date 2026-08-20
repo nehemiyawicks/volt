@@ -427,9 +427,25 @@ export class WebContents extends EventEmitter {
     await this.executeJavaScript("location.reload()");
   }
 
-  setWindowOpenHandler(_handler: (details: { url: string }) => { action: "allow" | "deny" }): void {
-    // v0.1: all target=_blank / window.open requests are routed to the OS
-    // browser via a Rust-side default. The handler is stored but not
-    // consulted until we can round-trip a decision back through wry.
+  setWindowOpenHandler(
+    handler: (details: { url: string; frameName?: string; features?: string; disposition?: string }) =>
+      { action: "allow" | "deny"; overrideBrowserWindowOptions?: unknown },
+  ): void {
+    void this.win._windowIdPromise().then((id) => {
+      let deny = true;
+      host().on("webContents.newWindowRequest", (msg: { window_id: number; url: string }) => {
+        if (msg.window_id !== id) return;
+        try {
+          const decision = handler({ url: msg.url });
+          const nextDeny = decision.action !== "allow";
+          if (nextDeny !== deny) {
+            deny = nextDeny;
+            void host().request("webContents.setNewWindowOpenPolicy", { window_id: id, deny });
+          }
+        } catch (err) {
+          process.stderr.write(`[webContents.setWindowOpenHandler] threw: ${err}\n`);
+        }
+      });
+    });
   }
 }

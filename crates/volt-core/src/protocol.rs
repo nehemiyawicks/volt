@@ -96,6 +96,8 @@ pub enum Command {
     TrayDestroy { id: String, reply_id: String },
     #[serde(rename = "webContents.executeJavaScript")]
     ExecuteJavaScript { window_id: u64, code: String, reply_id: String },
+    #[serde(rename = "webContents.setNewWindowOpenPolicy")]
+    SetNewWindowOpenPolicy { window_id: u64, deny: bool, reply_id: String },
     #[serde(rename = "webContents.openDevTools")]
     OpenDevTools { window_id: u64, reply_id: String },
     #[serde(rename = "webContents.closeDevTools")]
@@ -244,6 +246,8 @@ pub enum Event {
     DidStartLoading { window_id: u64 },
     #[serde(rename = "webContents.didFinishLoad")]
     DidFinishLoad { window_id: u64 },
+    #[serde(rename = "webContents.newWindowRequest")]
+    NewWindowRequest { window_id: u64, url: String },
     #[serde(rename = "app.allWindowsClosed")]
     AllWindowsClosed,
     #[serde(rename = "reply")]
