@@ -157,10 +157,14 @@ export class BrowserWindow extends EventEmitter {
 
   async show(): Promise<void> {
     await host().request("window.show", { window_id: await this.idPromise });
+    this._isVisible = true;
+    this.emit("show");
   }
 
   async hide(): Promise<void> {
     await host().request("window.hide", { window_id: await this.idPromise });
+    this._isVisible = false;
+    this.emit("hide");
   }
 
   async focus(): Promise<void> {
@@ -169,18 +173,27 @@ export class BrowserWindow extends EventEmitter {
 
   async minimize(): Promise<void> {
     await host().request("window.minimize", { window_id: await this.idPromise });
+    this._isMinimized = true;
+    this.emit("minimize");
   }
 
   async maximize(): Promise<void> {
     await host().request("window.maximize", { window_id: await this.idPromise });
+    this._isMaximized = true;
+    this.emit("maximize");
   }
 
   async unmaximize(): Promise<void> {
     await host().request("window.unmaximize", { window_id: await this.idPromise });
+    this._isMaximized = false;
+    this.emit("unmaximize");
   }
 
   async restore(): Promise<void> {
     await host().request("window.unmaximize", { window_id: await this.idPromise });
+    this._isMinimized = false;
+    this._isMaximized = false;
+    this.emit("restore");
   }
 
   async setTitle(title: string): Promise<void> {
@@ -247,7 +260,9 @@ export class BrowserWindow extends EventEmitter {
   isFullScreen(): boolean { return this._isFullScreen; }
   isSimpleFullScreen(): boolean { return this._isFullScreen; }
   async setFullScreen(flag: boolean): Promise<void> {
-    await host().request("window.setFullScreen", { window_id: await this.idPromise, flag });
+    try { await host().request("window.setFullScreen", { window_id: await this.idPromise, flag }); } catch {}
+    this._isFullScreen = flag;
+    this.emit(flag ? "enter-full-screen" : "leave-full-screen");
   }
 
   setBackgroundColor(_color: string): void {}
