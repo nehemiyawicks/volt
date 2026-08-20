@@ -465,6 +465,14 @@ fn handle_command(
             with_window(state, window_id, |w| w.set_always_on_top(flag))?;
             ack(&state.tx_to_js, reply_id)?;
         }
+        JsCommand::SetFullScreen { window_id, flag, reply_id } => {
+            let fs = if flag { Some(tao::window::Fullscreen::Borderless(None)) } else { None };
+            with_window(state, window_id, |w| w.set_fullscreen(fs))?;
+            state.tx_to_js.send(JsEvent::WindowStateChanged {
+                id: window_id, state: "fullscreen".into(), value: flag,
+            })?;
+            ack(&state.tx_to_js, reply_id)?;
+        }
         JsCommand::Quit => state.windows.clear(),
         JsCommand::ShowMessageBox { options, reply_id } => {
             let response = native_message_box(&options);

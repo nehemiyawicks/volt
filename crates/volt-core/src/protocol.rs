@@ -33,6 +33,8 @@ pub enum Command {
     GetBounds { window_id: u64, reply_id: String },
     #[serde(rename = "window.setAlwaysOnTop")]
     SetAlwaysOnTop { window_id: u64, flag: bool, reply_id: String },
+    #[serde(rename = "window.setFullScreen")]
+    SetFullScreen { window_id: u64, flag: bool, reply_id: String },
     #[serde(rename = "app.quit")]
     Quit,
     #[serde(rename = "dialog.showMessageBox")]
@@ -236,6 +238,8 @@ pub enum Event {
     WindowFocus { id: u64 },
     #[serde(rename = "window.blur")]
     WindowBlur { id: u64 },
+    #[serde(rename = "window.stateChanged")]
+    WindowStateChanged { id: u64, state: String, value: bool },
     #[serde(rename = "webContents.didStartLoading")]
     DidStartLoading { window_id: u64 },
     #[serde(rename = "webContents.didFinishLoad")]
