@@ -31,6 +31,14 @@ Status legend: **works**, **partial**, **stub** (present but no-op), **missing**
 | `autoUpdater.checkForUpdates()` | stub | fires `checking-for-update` then `update-not-available`; no real update backend |
 | `protocol.registerFileProtocol` and friends | stub | handlers stored but not wired to wry's custom-protocol backend yet |
 | `desktopCapturer.getSources` | stub | returns empty array |
+| `crashReporter.start` and friends | stub | no-op; no crash uploader |
+| `net.request` | works | wraps Node http/https; supports GET, POST, headers, streamed response |
+| `app.commandLine` | stub | appendSwitch/appendArgument/hasSwitch no-op; volt does not forward Chromium flags |
+| `app.dock.*` | stub | setBadge/hide/show/bounce/setMenu no-op |
+| `app.disableHardwareAcceleration` | stub | no effect (wry follows OS defaults) |
+| `app.moveToApplicationsFolder` | stub | returns true so first-launch flow doesn't loop |
+| `app.showAboutPanel` / `setAboutPanelOptions` | stub | no-op |
+| `app.addRecentDocument` / `clearRecentDocuments` | stub | no-op |
 | `BrowserWindow` constructor | works | `title`, `width`, `height`, `x`, `y`, `resizable`, `minimizable`, `maximizable`, `alwaysOnTop`, `frame`, `transparent`, `show`, `webPreferences` |
 | `BrowserWindow.loadURL()` | works | |
 | `BrowserWindow.loadFile()` | works | resolves to `file://` URL |

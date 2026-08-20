@@ -33,3 +33,5 @@ export { protocol } from "./protocol.js";
 export type { ProtocolRequest } from "./protocol.js";
 export { desktopCapturer } from "./desktop-capturer.js";
 export type { DesktopCapturerSource } from "./desktop-capturer.js";
+export { crashReporter } from "./crash-reporter.js";
+export { net } from "./net.js";

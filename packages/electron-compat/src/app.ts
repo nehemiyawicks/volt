@@ -50,9 +50,48 @@ class App extends EventEmitter {
   setAsDefaultProtocolClient(_protocol: string): boolean { return false; }
   removeAsDefaultProtocolClient(_protocol: string): boolean { return false; }
   isDefaultProtocolClient(_protocol: string): boolean { return false; }
-  requestSingleInstanceLock(): boolean { return true; }
+  requestSingleInstanceLock(_data?: unknown): boolean { return true; }
   hasSingleInstanceLock(): boolean { return true; }
   releaseSingleInstanceLock(): void {}
+
+  commandLine = {
+    appendSwitch(_switch: string, _value?: string): void {},
+    appendArgument(_argument: string): void {},
+    hasSwitch(_switch: string): boolean { return false; },
+    getSwitchValue(_switch: string): string { return ""; },
+    removeSwitch(_switch: string): void {},
+  };
+
+  disableHardwareAcceleration(): void {}
+  disableDomainBlockingFor3DAPIs(): void {}
+  getGPUFeatureStatus(): Record<string, string> { return {}; }
+  getGPUInfo(_infoType: "basic" | "complete"): Promise<unknown> { return Promise.resolve({}); }
+  focus(_opts?: { steal?: boolean }): void {}
+  hide(): void {}
+  show(): void {}
+  dock = {
+    setBadge(_text: string): void {},
+    getBadge(): string { return ""; },
+    hide(): void {},
+    show(): Promise<void> { return Promise.resolve(); },
+    isVisible(): boolean { return true; },
+    setMenu(_menu: unknown): void {},
+    setIcon(_image: unknown): void {},
+    bounce(_type?: "critical" | "informational"): number { return 0; },
+    cancelBounce(_id: number): void {},
+    downloadFinished(_filePath: string): void {},
+  };
+  addRecentDocument(_path: string): void {}
+  clearRecentDocuments(): void {}
+  setAccessibilitySupportEnabled(_enabled: boolean): void {}
+  isAccessibilitySupportEnabled(): boolean { return false; }
+  showAboutPanel(): void {}
+  setAboutPanelOptions(_options: unknown): void {}
+  configureHostResolver(_options: unknown): void {}
+  setSecureKeyboardEntryEnabled(_enabled: boolean): void {}
+  isSecureKeyboardEntryEnabled(): boolean { return false; }
+  moveToApplicationsFolder(): boolean { return true; }
+  isInApplicationsFolder(): boolean { return false; }
 
   getName(): string {
     return process.env.VOLT_APP_NAME ?? "Volt App";
