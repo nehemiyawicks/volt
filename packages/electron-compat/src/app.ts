@@ -158,6 +158,37 @@ class App extends EventEmitter {
   private macAppData(): string {
     return join(homedir(), "Library", "Application Support");
   }
+
+  setPath(name: string, path: string): void {
+    process.env[`VOLT_PATH_${name.toUpperCase()}`] = path;
+  }
+  setActivationPolicy(_policy: "regular" | "accessory" | "prohibited"): void {}
+  setUserActivity(_type: string, _userInfo: unknown, _webpageURL?: string): void {}
+  getCurrentActivityType(): string { return ""; }
+  invalidateCurrentActivity(): void {}
+  updateCurrentActivity(_type: string, _userInfo: unknown): void {}
+  resignCurrentActivity(): void {}
+  setUserTasks(_tasks: unknown[]): boolean { return false; }
+  setJumpList(_categories: unknown): string { return "ok"; }
+  getJumpListSettings(): unknown { return { minItems: 0, removedItems: [] }; }
+  async getFileIcon(_path: string, _options?: unknown): Promise<unknown> {
+    const { NativeImage } = await import("./native-image.js");
+    return NativeImage.createEmpty();
+  }
+  startAccessingSecurityScopedResource(_bookmarkData: string): () => void { return () => {}; }
+  getPreferredSystemLanguages(): string[] { return [this.getLocale()]; }
+  getSystemLocale(): string { return this.getLocale(); }
+  getSystemVersion(): string { return process.platform === "darwin" ? "14.0.0" : ""; }
+  getApplicationSupportedLanguages(): string[] { return ["en-US"]; }
+  setLoginItemSettings(_settings: unknown): void {}
+  getLoginItemSettings(_options?: unknown): unknown { return { openAtLogin: false, openAsHidden: false, wasOpenedAtLogin: false, restoreState: false, executableWillLaunchAtLogin: false, launchItems: [] }; }
+  isEmojiPanelSupported(): boolean { return process.platform === "darwin"; }
+  showEmojiPanel(): void {}
+  runningUnderARM64Translation(): boolean { return false; }
+  enableSandbox(): void {}
+  isDefaultProtocolClient(_protocol: string, _path?: string, _args?: string[]): boolean { return false; }
+  getApplicationInfoForProtocol(_url: string): Promise<unknown> { return Promise.resolve({ icon: null, path: "", name: "" }); }
+  configureHostResolverInternalOverride(): void {}
 }
 
 export const app = new App();
