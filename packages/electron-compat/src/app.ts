@@ -186,7 +186,6 @@ class App extends EventEmitter {
   showEmojiPanel(): void {}
   runningUnderARM64Translation(): boolean { return false; }
   enableSandbox(): void {}
-  isDefaultProtocolClient(_protocol: string, _path?: string, _args?: string[]): boolean { return false; }
   getApplicationInfoForProtocol(_url: string): Promise<unknown> { return Promise.resolve({ icon: null, path: "", name: "" }); }
   configureHostResolverInternalOverride(): void {}
 }
